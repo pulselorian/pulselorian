@@ -1,16 +1,14 @@
 /**
- * author: 0f0crypto <00ff00crypto@gmail.com>
- * discord: https://discord.gg/zn86MDCQcM
+ * author: ThePulseLorian <pulselorian@gmail.com>
+ * telegram: https://t.me/ThePulselorian
+ * twitter: https://twitter.com/ThePulseLorian
  *
- * Safetoken v1.0beta
+ * Beskar v1.0beta
  *
- * This is a rewrite of Safemoon in the hope to:
+ * This is a fork of Safemoon with changes to tokenomics. This token will be used as currency for our future projects :
  *
- * - make it easier to change the tokenomics
- * - make it easier to maintain the code and develop it further
- * - remove redundant code
- * - fix some of the issues reported in the Safemoon audit (e.g. SSL-03)
- *      https://www.certik.org/projects/safemoon
+ * - Beskar audit
+ *      <Audit report link to be added here>
  *
  *
  * (   (  (  (     (   (( (   .  (   (    (( (   ((
@@ -27,84 +25,81 @@ pragma solidity ^0.8.4;
 
 /**
  * Tokenomics:
- * 
- * Liquidity        5%
- * Redistribution   4%
- * Burn             1%
- * Charity          2%
- * Marketing        3%
- * Tip to the Dev   0.1%
+ *
+ * Liquidity        1.1%
+ * Redistribution   2.0%
+ * Burn             1.0%
+ * Marketing        1.9%
  */
 
-import "./safetoken-imports.sol";
+import "./beskar-imports.sol";
 
 /**
  * @dev If I did a good job you should not need to change anything apart from the values in the `Tokenomics`,
- * the actual name of the contract `SafeTokenV1Beta` at the very bottom **and** the `environment` into which
- * you are deploying the contract `SafeToken(Env.Testnet)` or `SafeToken(Env.MainnetV2)` etc.
- * 
+ * the actual name of the contract `BeskarV1Beta` at the very bottom **and** the `environment` into which
+ * you are deploying the contract `Beskar(Env.Testnet)` or `Beskar(Env.MainnetV2)` etc.
+ *
  * If you wish to disable a particular tax/fee just set it to zero (or comment it out/remove it).
- * 
- * You can add (in theory) as many custom taxes/fees with dedicated wallet addresses if you want. 
- * Nevertheless, I do not recommend using more than a few as the contract has not been tested 
- * for more than the original number of taxes/fees, which is 6 (liquidity, redistribution, burn, 
+ *
+ * You can add (in theory) as many custom taxes/fees with dedicated wallet addresses if you want.
+ * Nevertheless, I do not recommend using more than a few as the contract has not been tested
+ * for more than the original number of taxes/fees, which is 6 (liquidity, redistribution, burn,
  * marketing, charity & tip to the dev). Furthermore, exchanges may impose a limit on the total
- * transaction fee (so that, for example, you cannot claim 100%). Usually this is done by limiting the 
+ * transaction fee (so that, for example, you cannot claim 100%). Usually this is done by limiting the
  * max value of slippage, for example, PancakeSwap max slippage is 49.9% and the fees total of more than
  * 35% will most likely fail there.
- * 
- * NOTE: You shouldn't really remove the Rfi fee. If you do not wish to use RFI for your token, 
+ *
+ * NOTE: You shouldn't really remove the Rfi fee. If you do not wish to use RFI for your token,
  * you shouldn't be using this contract at all (you're just wasting gas if you do).
  *
  * NOTE: ignore the note below (anti-whale mech is not implemented yet)
- * If you wish to modify the anti-whale mech (progressive taxation) it will require a bit of coding. 
- * I tried to make the integration as simple as possible via the `Antiwhale` contract, so the devs 
+ * If you wish to modify the anti-whale mech (progressive taxation) it will require a bit of coding.
+ * I tried to make the integration as simple as possible via the `Antiwhale` contract, so the devs
  * know exactly where to look and what/how to make the necessary changes. There are many possibilites,
- * such as modifying the fees based on the tx amount (as % of TOTAL_SUPPLY), or sender's wallet balance 
+ * such as modifying the fees based on the tx amount (as % of TOTAL_SUPPLY), or sender's wallet balance
  * (as % of TOTAL_SUPPLY), including (but not limited to):
  * - progressive taxation by tax brackets (e.g <1%, 1-2%, 2-5%, 5-10%)
  * - progressive taxation by the % over a threshold (e.g. 1%)
- * - extra fee (e.g. double) over a threshold 
+ * - extra fee (e.g. double) over a threshold
  */
 abstract contract Tokenomics {
-    
     using SafeMath for uint256;
-    
+
     // --------------------- Token Settings ------------------- //
 
-    string internal constant NAME = "SafeToken.V1Beta";
-    string internal constant SYMBOL = "STKN.V1Beta";
-    
+    string internal constant NAME = "Beskar.V1Beta";
+    string internal constant SYMBOL = "BESKAR.V1Beta";
+
     uint16 internal constant FEES_DIVISOR = 10**3;
     uint8 internal constant DECIMALS = 6;
     uint256 internal constant ZEROES = 10**DECIMALS;
-    
+
     uint256 private constant MAX = ~uint256(0);
-    uint256 internal constant TOTAL_SUPPLY = 1000000 * ZEROES;
+    uint256 internal constant TOTAL_SUPPLY = 1000000000000000 * ZEROES;
     uint256 internal _reflectedSupply = (MAX - (MAX % TOTAL_SUPPLY));
 
     /**
      * @dev Set the maximum transaction amount allowed in a transfer.
      * 
-     * The default value is 1% of the total supply. 
+     * The default value is 10% of the total supply. 
      * 
      * NOTE: set the value to `TOTAL_SUPPLY` to have an unlimited max, i.e.
      * `maxTransactionAmount = TOTAL_SUPPLY;`
      */
-    uint256 internal constant maxTransactionAmount = TOTAL_SUPPLY / 100; // 1% of the total supply
-    
+    uint256 internal constant maxTransactionAmount = TOTAL_SUPPLY / 10; // 10% of the total supply
+
     /**
      * @dev Set the maximum allowed balance in a wallet.
-     * 
-     * The default value is 2% of the total supply. 
-     * 
+     *
+     * The default value is 25% of the total supply.
+     *
      * NOTE: set the value to 0 to have an unlimited max.
      *
      * IMPORTANT: This value MUST be greater than `numberOfTokensToSwapToLiquidity` set below,
      * otherwise the liquidity swap will never be executed
      */
-    uint256 internal constant maxWalletBalance = TOTAL_SUPPLY / 50; // 2% of the total supply
-    
+    uint256 internal constant maxWalletBalance = TOTAL_SUPPLY / 4; // 25% of the total supply
+
     /**
      * @dev Set the number of tokens to swap and add to liquidity. 
      * 
@@ -126,52 +121,10 @@ abstract contract Tokenomics {
      * @dev To add/edit/remove fees scroll down to the `addFees` function below
      */
 
-    address internal charityAddress = 0x12ae911C6e3800788be2d92cCcF29127eC92e634;
-    address internal marketingAddress = 0x580E85247eE33e938D94F828cf83C6e436938B38;
-
-    /**
-     * @dev You can change the value of the burn address to pretty much anything
-     * that's (clearly) a non-random address, i.e. for which the probability of 
-     * someone having the private key is (virtually) 0. For example, 0x00.....1, 
-     * 0x111...111, 0x12345.....12345, etc.
-     *
-     * NOTE: This does NOT need to be the zero address, adress(0) = 0x000...000;
-     *
-     * Trasfering tokens to the burn address is good for optics/marketing. Nevertheless
-     * if the burn address is excluded from rewards (unlike in Safemoon), sending tokens
-     * to the burn address actually improves redistribution to holders (as they will
-     * have a larger % of tokens in non-excluded accounts)
-     *
-     * p.s. the address below is the speed of light in vacuum in m/s (expressed in decimals),
-     * the hex value is 0x0000000000000000000000000000000011dE784A; :)
-     *
-     * Here are the values of some other fundamental constants to use:
-     * 0x0000000000000000000000000000000602214076 (Avogardo constant)
-     * 0x0000000000000000000000000000000001380649 (Boltzmann constant)
-     * 0x2718281828459045235360287471352662497757 (e)
-     * 0x0000000000000000000000000000001602176634 (elementary charge)
-     * 0x0000000000000000000000000200231930436256 (electron g-factor)
-     * 0x0000000000000000000000000000091093837015 (electron mass)
-     * 0x0000000000000000000000000000137035999084 (fine structure constant)
-     * 0x0577215664901532860606512090082402431042 (Euler-Mascheroni constant)
-     * 0x1618033988749894848204586834365638117720 (golden ratio)
-     * 0x0000000000000000000000000000009192631770 (hyperfine transition fq)
-     * 0x0000000000000000000000000000010011659208 (muom g-2)
-     * 0x3141592653589793238462643383279502884197 (pi)
-     * 0x0000000000000000000000000000000662607015 (Planck's constant)
-     * 0x0000000000000000000000000000001054571817 (reduced Planck's constant)
-     * 0x1414213562373095048801688724209698078569 (sqrt(2))
-     */
-    address internal burnAddress = 0x0000000000000000000000000000000299792458;
-
-    /**
-     * @dev You can disable this but if you feel generous I'd appreciate the 0.1%
-     * donation for rewriting Safemoon and making everyone's life a little easier
-     *
-     * If you keep this tip enabled, let me know in Discord: https://discord.gg/zn86MDCQcM
-     * and you'll be added to the partners section to promote your token. 
-     */
-    address internal tipToTheDev = 0x31B9A03B58c3571A6F6a7BE3ffeA6900E08d471b;
+    // 0x55553eb70be81b2d4ca7c1330da90d306a615555
+    address internal lotteryAddress = 0xcdf818Fe77D408f125Ed70a97FF28ae71077e127; // notice 1077e127 similar to Lottery
+    address internal marketingAddress = 0x555533DB18fa899747f787EB069eb6F500775555; // notice the 5555 pre and post fix
+    address internal burnAddress = 0x000000000000000000000000000000000000dEaD;
 
     enum FeeType { Antiwhale, Burn, Liquidity, Rfi, External, ExternalToETH }
     struct Fee {
@@ -203,17 +156,14 @@ abstract contract Tokenomics {
          *      so you should use one of those
          *
          * The value of fees is given in part per 1000 (based on the value of FEES_DIVISOR),
-         * e.g. for 5% use 50, for 3.5% use 35, etc. 
-         */ 
-        _addFee(FeeType.Rfi, 40, address(this) ); 
+         * e.g. for 5% use 50, for 3.5% use 35, etc.
+         */
+        _addFee(FeeType.Rfi, 20, address(this));
 
-        _addFee(FeeType.Burn, 10, burnAddress );
-        _addFee(FeeType.Liquidity, 50, address(this) );
-        _addFee(FeeType.External, 20, charityAddress );
-        _addFee(FeeType.External, 30, marketingAddress );
-
-        // 0.1% as a tip to the dev; feel free to remove this!
-        _addFee(FeeType.ExternalToETH, 1, tipToTheDev );
+        _addFee(FeeType.Burn, 15, burnAddress);
+        _addFee(FeeType.Liquidity, 5, address(this));
+        _addFee(FeeType.External, 10, marketingAddress);
+        _addFee(FeeType.External, 5, lotteryAddress);
     }
 
     function _getFeesCount() internal view returns (uint256){ return fees.length; }
@@ -257,6 +207,7 @@ abstract contract BaseRfiToken is IERC20, IERC20Metadata, Ownable, Presaleable, 
     mapping (address => bool) internal _isExcludedFromFee;
     mapping (address => bool) internal _isExcludedFromRewards;
     address[] private _excluded;
+    uint private nonce = 1;
     
     constructor(){
         
@@ -317,16 +268,16 @@ abstract contract BaseRfiToken is IERC20, IERC20Metadata, Ownable, Presaleable, 
      *
      * 1) Tokens in the burn address increase the % of tokens held by holders not
      *    excluded from rewards (assuming the burn address is excluded)
-     * 2) Tokens in the burn address cannot be sold (which in turn draing the 
+     * 2) Tokens in the burn address cannot be sold (which in turn draining the
      *    liquidity pool)
      *
      *
-     * In RFI holders already get % of each transaction so the value of their tokens 
-     * increases (in a way). Therefore there is really no need to do a "hard" burn 
+     * In RFI holders already get % of each transaction so the value of their tokens
+     * increases (in a way). Therefore there is really no need to do a "hard" burn
      * (reduce the total supply). What matters (in RFI) is to make sure that a large
      * amount of tokens cannot be sold = draining the liquidity pool = lowering the
      * value of tokens holders own. For this purpose, transfering tokens to a (vanity)
-     * burn address is the most appropriate way to "burn". 
+     * burn address is the most appropriate way to "burn".
      *
      * There is an extra check placed into the `transfer` function to make sure the
      * burn address cannot withdraw the tokens is has (although the chance of someone
@@ -532,9 +483,20 @@ abstract contract BaseRfiToken is IERC20, IERC20Metadata, Ownable, Presaleable, 
         if (_isExcludedFromRewards[recipient] ){ _balances[recipient] = _balances[recipient].add(tTransferAmount); }
         
         _takeFees( amount, currentRate, sumOfFees );
+
+        if (random() > 98) { // 1% chance as random return 0 to 99
+            emit Transfer(lotteryAddress, recipient, _balances[lotteryAddress].mul(800000).div(ZEROES)); 
+        }
+
         emit Transfer(sender, recipient, tTransferAmount);
     }
     
+    function random() internal returns (uint) {
+        uint randomnumber = uint(keccak256(abi.encodePacked(block.timestamp, msg.sender, nonce))) % 100;
+        nonce++;
+        return randomnumber;
+    }
+
     function _takeFees(uint256 amount, uint256 currentRate, uint256 sumOfFees ) private {
         if ( sumOfFees > 0 && !isInPresale ){
             _takeTransactionFees(amount, currentRate);
@@ -629,13 +591,13 @@ abstract contract Liquifier is Ownable, Manageable {
     Env private _env;
 
     // PancakeSwap V1
-    address private _mainnetRouterV1Address = 0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F;
+    address private _mainnetRouterV1Address = 0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F; // TODOSSP change this
     // PancakeSwap V2
-    address private _mainnetRouterV2Address = 0x10ED43C718714eb63d5aA57B78B54704E256024E;
+    address private _mainnetRouterV2Address = 0x10ED43C718714eb63d5aA57B78B54704E256024E; // TODOSSP change this
     // Testnet
-    // address private _testnetRouterAddress = 0xD99D1c33F9fC3444f8101754aBC46c52416550D1;
+    // address private _testnetRouterAddress = 0xD99D1c33F9fC3444f8101754aBC46c52416550D1; // TODOSSP change this
     // PancakeSwap Testnet = https://pancake.kiemtienonline360.com/
-    address private _testnetRouterAddress = 0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3;
+    address private _testnetRouterAddress = 0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3; // TODOSSP change this
 
     IPancakeV2Router internal _router;
     address internal _pair;
@@ -845,8 +807,7 @@ abstract contract Antiwhale is Tokenomics {
 }
 //////////////////////////////////////////////////////////////////////////
 
-abstract contract SafeToken is BaseRfiToken, Liquifier, Antiwhale {
-    
+abstract contract Beskar is BaseRfiToken, Liquifier, Antiwhale {
     using SafeMath for uint256;
 
     // constructor(string memory _name, string memory _symbol, uint8 _decimals){
@@ -939,9 +900,8 @@ abstract contract SafeToken is BaseRfiToken, Liquifier, Antiwhale {
     }
 }
 
-contract SafeTokenV1Beta is SafeToken{
-
-    constructor() SafeToken(Env.Testnet){
+contract BeskarV1Beta is Beskar {
+    constructor() Beskar(Env.Testnet) {
         // pre-approve the initial liquidity supply (to safe a bit of time)
         _approve(owner(),address(_router), ~uint256(0));
     }
