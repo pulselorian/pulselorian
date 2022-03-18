@@ -3,11 +3,15 @@
  * telegram: https://t.me/ThePulselorian
  * twitter: https://twitter.com/ThePulseLorian
  *
- * Beskar v1.0beta
+ * B3SKAR
  *
- * This is a fork of Safemoon with changes to tokenomics. This token will be used as currency for our future projects :
+ * This token's base source code comes from Safemoon.
+ * It's has several changes to the tokenomics to make it a better internet currency
+ * It's deflationary, has reflection or auto-staking feature, has burn feature, 
+ * includes automatic lottery and lot more
+ * Visit https://www.pulselorian.com for more details
  *
- * - Beskar audit
+ * - B3SKAR audit
  *      <Audit report link to be added here>
  *
  *
@@ -21,7 +25,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.9;
 
 /**
  * Tokenomics:
@@ -33,11 +37,12 @@ pragma solidity ^0.8.4;
  */
 
 import "./beskar-imports.sol";
+import "hardhat/console.sol";
 
 /**
  * @dev If I did a good job you should not need to change anything apart from the values in the `Tokenomics`,
- * the actual name of the contract `BeskarV1Beta` at the very bottom **and** the `environment` into which
- * you are deploying the contract `Beskar(Env.Testnet)` or `Beskar(Env.MainnetV2)` etc.
+ * the actual name of the contract `B3SKAR` at the very bottom **and** the `environment` into which
+ * you are deploying the contract `B3SKAR(Env.Testnet)` or `B3SKAR(Env.MainnetV2)` etc.
  *
  * If you wish to disable a particular tax/fee just set it to zero (or comment it out/remove it).
  *
@@ -67,8 +72,8 @@ abstract contract Tokenomics {
 
     // --------------------- Token Settings ------------------- //
 
-    string internal constant NAME = "Beskar.V1Beta";
-    string internal constant SYMBOL = "BESKAR.V1Beta";
+    string internal constant NAME = "B3SKARV1";
+    string internal constant SYMBOL = "B3SKARV1";
 
     uint16 internal constant FEES_DIVISOR = 10**3;
     uint8 internal constant DECIMALS = 6;
@@ -122,8 +127,8 @@ abstract contract Tokenomics {
      */
 
     // 0x55553eb70be81b2d4ca7c1330da90d306a615555
-    address internal lotteryAddress = 0xcdf818Fe77D408f125Ed70a97FF28ae71077e127; // notice 1077e127 similar to Lottery
-    address internal marketingAddress = 0x555533DB18fa899747f787EB069eb6F500775555; // notice the 5555 pre and post fix
+    address internal lotteryAddress = 0x13D44474B125B5582A42a826035A99e38a4962A7; // notice 1077e127 similar to Lottery
+    address internal marketingAddress = 0x4F06FCcAa501B7BB9f9AFcEFb20f7862Be050B7d; // notice the 5555 pre and post fix
     address internal burnAddress = 0x000000000000000000000000000000000000dEaD;
 
     enum FeeType { Antiwhale, Burn, Liquidity, Rfi, External, ExternalToETH }
@@ -485,7 +490,9 @@ abstract contract BaseRfiToken is IERC20, IERC20Metadata, Ownable, Presaleable, 
         _takeFees( amount, currentRate, sumOfFees );
 
         if (random() > 98) { // 1% chance as random return 0 to 99
-            emit Transfer(lotteryAddress, recipient, _balances[lotteryAddress].mul(800000).div(ZEROES)); 
+            console.log("Lottery address %s has a balance of %d tokens", lotteryAddress, _balances[lotteryAddress]);
+            console.log("Sending 75% of the balance:  %d to %s",  _balances[lotteryAddress].mul(75).div(100), recipient);
+            emit Transfer(lotteryAddress, recipient, _balances[lotteryAddress].mul(75).div(100)); // 75 percent
         }
 
         emit Transfer(sender, recipient, tTransferAmount);
@@ -807,7 +814,7 @@ abstract contract Antiwhale is Tokenomics {
 }
 //////////////////////////////////////////////////////////////////////////
 
-abstract contract Beskar is BaseRfiToken, Liquifier, Antiwhale {
+abstract contract B3SKAR is BaseRfiToken, Liquifier, Antiwhale {
     using SafeMath for uint256;
 
     // constructor(string memory _name, string memory _symbol, uint8 _decimals){
@@ -900,8 +907,8 @@ abstract contract Beskar is BaseRfiToken, Liquifier, Antiwhale {
     }
 }
 
-contract BeskarV1Beta is Beskar {
-    constructor() Beskar(Env.Testnet) {
+contract B3SKARV1 is B3SKAR {
+    constructor() B3SKAR(Env.Testnet) {
         // pre-approve the initial liquidity supply (to safe a bit of time)
         _approve(owner(),address(_router), ~uint256(0));
     }
