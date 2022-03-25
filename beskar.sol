@@ -3,7 +3,7 @@
  * telegram: https://t.me/ThePulselorian
  * twitter: https://twitter.com/ThePulseLorian
  *
- * B35K4R
+ * BESKHA
  *
  * This token's base source code comes from Safemoon.
  * It's has several changes to the tokenomics to make it a better internet currency
@@ -11,7 +11,7 @@
  * includes automatic lottery and lot more
  * Visit https://www.pulselorian.com for more details
  *
- * - B35K4R audit
+ * - BSKR01 audit
  *      <Audit report link to be added here>
  *
  *
@@ -42,8 +42,8 @@ import "./beskar-imports.sol";
 
 /**
  * @dev If I did a good job you should not need to change anything apart from the values in the `Tokenomics`,
- * the actual name of the contract `B35K4R` at the very bottom **and** the `environment` into which
- * you are deploying the contract `B35K4R(Env.Testnet)` or `B35K4R(Env.MainnetV2)` etc.
+ * the actual name of the contract `BSKR001` at the very bottom **and** the `environment` into which
+ * you are deploying the contract `BSKR001(Env.Testnet)` or `BSKR001(Env.MainnetV2)` etc.
  *
  * If you wish to disable a particular tax/fee just set it to zero (or comment it out/remove it).
  *
@@ -73,8 +73,8 @@ abstract contract Tokenomics {
 
     // --------------------- Token Settings ------------------- //
 
-    string internal constant NAME = "B35K4R H4ND5";
-    string internal constant SYMBOL = "B35K4Rv5";
+    string internal constant NAME = "Beskar Hands";
+    string internal constant SYMBOL = "BSKR01";
 
     uint16 internal constant FEES_DIVISOR = 10**3;
     uint8 internal constant DECIMALS = 6;
@@ -1099,7 +1099,7 @@ abstract contract Antiwhale is Tokenomics {
 
 //////////////////////////////////////////////////////////////////////////
 
-abstract contract B35K4R is BaseRfiToken, Liquifier, Antiwhale {
+abstract contract Beskar is BaseRfiToken, Liquifier, Antiwhale {
     using SafeMath for uint256;
 
     // constructor(string memory _name, string memory _symbol, uint8 _decimals){
@@ -1227,8 +1227,8 @@ abstract contract B35K4R is BaseRfiToken, Liquifier, Antiwhale {
     }
 }
 
-contract B35K4Rv5 is B35K4R {
-    constructor() B35K4R(Env.Testnet) {
+contract BSKR01 is Beskar {
+    constructor() Beskar(Env.Testnet) {
         // pre-approve the initial liquidity supply (to safe a bit of time)
         _approve(owner(), address(_router), ~uint256(0));
     }
