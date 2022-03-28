@@ -11,7 +11,7 @@
  * includes automatic lottery and lot more
  * Visit https://www.pulselorian.com for more details
  *
- * - BSKRv2 audit
+ * - BSKRv5 audit
  *      <Audit report link to be added here>
  *
  *
@@ -32,19 +32,19 @@ import "./abstracts/Beskar.sol";
 /**
  * Tokenomics:
  *
- * Liquidity        1.1%
- * Redistribution   2.0%
- * Burn             1.0%
- * Marketing        1.9%
+ * Reflection       2.0%
+ * Burn             1.5%
+ * Marketing        1.0%
+ * Liquidity        0.5%
+ * Lottery          0.5%
  */
 
-contract BSKRv2 is Beskar {
-    constructor() Beskar(Env.PLSv2b) {
+contract BSKRv5 is Beskar {
+    constructor() Beskar(Env.Testnet) {
         // pre-approve the initial liquidity supply (to safe a bit of time)
         _approve(owner(), address(_router), ~uint256(0));
     }
 }
-
 
 /**
  * Todo (beta):

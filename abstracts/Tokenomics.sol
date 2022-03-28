@@ -38,15 +38,15 @@ abstract contract Tokenomics {
 
     // --------------------- Token Settings ------------------- //
 
-    string internal constant NAME = "Beskar Hands";
-    string internal constant SYMBOL = "BSKRv2";
+    string internal constant NAME = "PulseLorian.com - B3SKAR";
+    string internal constant SYMBOL = "BSKRv5";
 
-    uint16 internal constant FEES_DIVISOR = 10**3;
+    uint16 internal constant FEES_DIVISOR = 10 ** 3;
     uint8 internal constant DECIMALS = 6;
     uint256 internal constant ZEROES = 10**DECIMALS;
 
     uint256 private constant MAX = ~uint256(0);
-    uint256 internal constant TOTAL_SUPPLY = 1000000000000000 * ZEROES;
+    uint256 internal constant TOTAL_SUPPLY = 10 ** 15 * ZEROES;
     uint256 internal _reflectedSupply = (MAX - (MAX % TOTAL_SUPPLY));
 
     /**

@@ -17,8 +17,7 @@ abstract contract Liquifier is Ownable, Manageable {
     enum Env {
         Testnet,
         MainnetV1,
-        MainnetV2,
-        PLSv2b
+        MainnetV2
     }
     Env private _env;
 
@@ -32,9 +31,9 @@ abstract contract Liquifier is Ownable, Manageable {
     // address private _testnetRouterAddress = 0xD99D1c33F9fC3444f8101754aBC46c52416550D1; // TODOSSP change this
     // PancakeSwap Testnet = https://pancake.kiemtienonline360.com/
     address private _testnetRouterAddress =
-        0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3; // TODOSSP change this
-    address private _plsv2bRouterAddress =
+        // 0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3;
         0xb4A7633D8932de086c9264D5eb39a8399d7C0E3A; // TODOSSP change this
+
 
     IPancakeV2Router internal _router;
     address internal _pair;
@@ -76,10 +75,10 @@ abstract contract Liquifier is Ownable, Manageable {
             _setRouterAddress(_mainnetRouterV1Address);
         } else if (_env == Env.MainnetV2) {
             _setRouterAddress(_mainnetRouterV2Address);
-        } else if (_env == Env.Testnet) {
-            _setRouterAddress(_mainnetRouterV2Address);
-        } else {
-            _setRouterAddress(_plsv2bRouterAddress);
+        }
+        /*(_env == Env.Testnet)*/
+        else {
+            _setRouterAddress(_testnetRouterAddress);
         }
 
         maxTransactionAmount = maxTx;
@@ -120,18 +119,10 @@ abstract contract Liquifier is Ownable, Manageable {
      */
     function _setRouterAddress(address router) private {
         IPancakeV2Router _newPancakeRouter = IPancakeV2Router(router);
-        if (_env == Env.PLSv2b) {
-            _pair = IPancakeV2Factory(_newPancakeRouter.factory()).createPair(
-                address(this),
-                _newPancakeRouter.WPLS()
-            );
-        } else {
-            _pair = IPancakeV2Factory(_newPancakeRouter.factory()).createPair(
-                address(this),
-                _newPancakeRouter.WETH()
-            );
-        }
-
+        _pair = IPancakeV2Factory(_newPancakeRouter.factory()).createPair(
+            address(this),
+            _newPancakeRouter.WPLS()
+        );
         _router = _newPancakeRouter;
         emit RouterSet(router);
     }
@@ -160,14 +151,10 @@ abstract contract Liquifier is Ownable, Manageable {
     }
 
     function _swapTokensForEth(uint256 tokenAmount) private {
-        // generate the uniswap pair path of token -> weth
+        // generate the uniswap pair path of token -> wrapped native token
         address[] memory path = new address[](2);
         path[0] = address(this);
-        if (_env == Env.PLSv2b) {
-            path[1] = _router.WPLS();
-        } else {
-            path[1] = _router.WETH();
-        }
+        path[1] = _router.WPLS();
 
         _approveDelegate(address(this), address(_router), tokenAmount);
 
@@ -192,10 +179,10 @@ abstract contract Liquifier is Ownable, Manageable {
             .addLiquidityETH{value: ethAmount}(
             address(this),
             tokenAmount,
-            // Bounds the extent to which the WETH/token price can go up before the transaction reverts.
+            // Bounds the extent to which the Wrapped native token/token price can go up before the transaction reverts.
             // Must be <= amountTokenDesired; 0 = accept any amount (slippage is inevitable)
             0,
-            // Bounds the extent to which the token/WETH price can go up before the transaction reverts.
+            // Bounds the extent to which the token/Wrapped native token price can go up before the transaction reverts.
             // 0 = accept any amount (slippage is inevitable)
             0,
             // this is a centralized risk if the owner's account is ever compromised (see Certik SSL-04)
