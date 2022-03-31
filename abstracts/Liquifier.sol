@@ -54,13 +54,12 @@ abstract contract Liquifier is Ownable, Manageable {
     event RouterSet(address indexed router);
     event SwapAndLiquify(
         uint256 tokensSwapped,
-        uint256 ethReceived,
+        uint256 nativeTokensReceived,
         uint256 tokensIntoLiquidity
     );
-    event SwapAndLiquifyEnabledUpdated(bool enabled);
     event LiquidityAdded(
         uint256 tokenAmountSent,
-        uint256 ethAmountSent,
+        uint256 nativeTokenAmountSent,
         uint256 liquidity
     );
 
@@ -134,16 +133,16 @@ abstract contract Liquifier is Ownable, Manageable {
         uint256 half = amount.div(2);
         uint256 otherHalf = amount.sub(half);
 
-        // capture the contract's current ETH balance.
-        // this is so that we can capture exactly the amount of ETH that the
-        // swap creates, and not make the liquidity event include any ETH that
+        // capture the contract's current native token balance.
+        // this is so that we can capture exactly the amount of native tokens that the
+        // swap creates, and not make the liquidity event include any native tokens that
         // has been manually sent to the contract
         uint256 initialBalance = address(this).balance;
 
-        // swap tokens for ETH
-        _swapTokensForEth(half); // <- this breaks the ETH -> HATE swap when swap+liquify is triggered
+        // swap tokens for native token
+        _swapTokensForNativeTokens(half); // <- this breaks the Native token -> HATE swap when swap+liquify is triggered
 
-        // how much ETH did we just swap into?
+        // how much native token did we just swap into?
         uint256 newBalance = address(this).balance.sub(initialBalance);
 
         // add liquidity to uniswap
@@ -152,7 +151,7 @@ abstract contract Liquifier is Ownable, Manageable {
         emit SwapAndLiquify(half, newBalance, otherHalf);
     }
 
-    function _swapTokensForEth(uint256 tokenAmount) private {
+    function _swapTokensForNativeTokens(uint256 tokenAmount) private {
         // generate the uniswap pair path of token -> wrapped native token
         address[] memory path = new address[](2);
         path[0] = address(this);
@@ -172,13 +171,13 @@ abstract contract Liquifier is Ownable, Manageable {
         );
     }
 
-    function _addLiquidity(uint256 tokenAmount, uint256 ethAmount) private {
+    function _addLiquidity(uint256 tokenAmount, uint256 nativeTokenAmount) private {
         // approve token transfer to cover all possible scenarios
         _approveDelegate(address(this), address(_router), tokenAmount);
 
         // add tahe liquidity
-        (uint256 tokenAmountSent, uint256 ethAmountSent, uint256 liquidity) = _router
-            .addLiquidityETH{value: ethAmount}(
+        (uint256 tokenAmountSent, uint256 nativeTokenAmountSent, uint256 liquidity) = _router
+            .addLiquidityETH{value: nativeTokenAmount}(
             address(this),
             tokenAmount,
             // Bounds the extent to which the Wrapped native token/token price can go up before the transaction reverts.
@@ -192,16 +191,16 @@ abstract contract Liquifier is Ownable, Manageable {
             block.timestamp
         );
 
-        // fix the forever locked BNBs as per the certik's audit
+        // fix the forever locked native token as per the Safemoon's certik audit
         /**
-         * The swapAndLiquify function converts half of the contractTokenBalance SafeMoon tokens to BNB.
-         * For every swapAndLiquify function call, a small amount of BNB remains in the contract.
+         * The swapAndLiquify function converts half of the contractTokenBalance BSKR tokens to native tokens.
+         * For every swapAndLiquify function call, a small amount of native tokens remains in the contract.
          * This amount grows over time with the swapAndLiquify function being called throughout the life
          * of the contract. The Safemoon contract does not contain a method to withdraw these funds,
-         * and the BNB will be locked in the Safemoon contract forever.
+         * and the native token will be locked in the Safemoon contract forever.
          */
         withdrawableBalance = address(this).balance;
-        emit LiquidityAdded(tokenAmountSent, ethAmountSent, liquidity);
+        emit LiquidityAdded(tokenAmountSent, nativeTokenAmountSent, liquidity);
     }
 
     /**
@@ -215,32 +214,35 @@ abstract contract Liquifier is Ownable, Manageable {
      * @dev Sends the swap and liquify flag to the provided value. If set to `false` tokens collected in the contract will
      * NOT be converted into liquidity.
      */
-    function setSwapAndLiquifyEnabled(bool enabled) external onlyManager {
-        swapAndLiquifyEnabled = enabled;
-        emit SwapAndLiquifyEnabledUpdated(swapAndLiquifyEnabled);
-    }
+    // Probably we do not want this control - instead let's cap the liquidity to a fixed percent say 15%
+    
+    // event SwapAndLiquifyEnabledUpdated(bool enabled);
+    // function setSwapAndLiquifyEnabled(bool enabled) external onlyManager {
+    //     swapAndLiquifyEnabled = enabled;
+    //     emit SwapAndLiquifyEnabledUpdated(swapAndLiquifyEnabled);
+    // }
 
     /**
-     * @dev The owner can withdraw PLS(BNB) collected in the contract from `swapAndLiquify`
-     * or if someone (accidentally) sends PLS/BNB directly to the contract.
+     * @dev The owner can withdraw native token collected in the contract from `swapAndLiquify`
+     * or if someone (accidentally) sends native token directly to the contract.
      *
      * Note: Fix for Safemoon contract flaw pointed out in the Certik Audit (SSL-03):
      *
-     * The swapAndLiquify function converts half of the contractTokenBalance BSKR tokens to BNB/PLS.
-     * For every swapAndLiquify function call, a small amount of BNB remains in the contract.
+     * The swapAndLiquify function converts half of the contractTokenBalance BSKR tokens to native token.
+     * For every swapAndLiquify function call, a small amount of native token remains in the contract.
      * This amount grows over time with the swapAndLiquify function being called
      * throughout the life of the contract. The BSKR contract does not contain a method
-     * to withdraw these funds, and the BNB/PLS will be locked in the BSKR contract forever.
+     * to withdraw these funds, and the native token will be locked in the BSKR contract forever.
      * 
      */
-    function withdrawLockedEth(address payable recipient) external onlyManager {
+    function withdrawLockedNativeTokens(address payable recipient) external onlyManager {
         require(
             recipient != address(0),
-            "Cannot withdraw the ETH balance to the zero address"
+            "Cannot withdraw the native token balance to the zero address"
         );
         require(
             withdrawableBalance > 0,
-            "The ETH balance must be greater than 0"
+            "The native token balance must be greater than 0"
         );
 
         // prevent re-entrancy attacks
@@ -250,7 +252,7 @@ abstract contract Liquifier is Ownable, Manageable {
     }
 
     /**
-     * @dev Use this delegate instead of having (unnecessarily) extend `BaseRfiToken` to gained access
+     * @dev Use this delegate instead of having (unnecessarily) extend `LotteryRfiToken` to gained access
      * to the `_approve` function.
      */
     function _approveDelegate(

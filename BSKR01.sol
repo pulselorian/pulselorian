@@ -5,7 +5,7 @@
  *
  * BESKHA
  *
- * This token's source code borrows some features/code from Safemoon.
+ * BSKR's source code borrows some features/code from Safemoon.
  * It's has several changes to the tokenomics to make it a better internet currency
  * It's deflationary, has reflection or auto-staking feature, has burn feature,
  * includes automatic lottery and lot more
@@ -48,7 +48,7 @@ contract BSKRv6 is Beskar {
 
 /**
  *
- * - implement `_takeFeeToETH` (currently just calls `_takeFee`)
+ * - implement `_takeFeeToNativeToken` (currently just calls `_takeFee`)
  * - implement anti whale mechanics (via different pre-created libraries?), eg progressive tax
  * - implement anti sell mechanics
  * - address SSL-04 | Centralized risk in addLiquidity - certik.org finding
@@ -67,5 +67,4 @@ contract BSKRv6 is Beskar {
  * - `maxWalletBalance` works correctly and *unlimited* accounts are not subject to the limit
  * - accounts excluded from fees are not subjecto tx fees
  * - accounts excluded from rewards do not share in rewards
- * - PLS/BNB collected/stuck in the contract can be withdrawn (see)
  */

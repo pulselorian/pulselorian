@@ -9,8 +9,8 @@ import "../libraries/SafeMath.sol";
  *
  * If you wish to disable a particular tax/fee just set it to zero (or comment it out/remove it).
  *
- * Some exchanges may impose a limit on the total transaction fee (for example, cannot claim 100%). 
- * Usually this is done by limiting the max value of slippage, for example, PancakeSwap max slippage 
+ * Some exchanges may impose a limit on the total transaction fee (for example, cannot claim 100%).
+ * Usually this is done by limiting the max value of slippage, for example, PancakeSwap max slippage
  * is 49.9% and the fees total of more than 35% will most likely fail there.
  *
  */
@@ -59,11 +59,11 @@ abstract contract Tokenomics {
      *
      * If the `FeeType.Liquidity` is enabled in `FeesSettings`, the given % of each transaction will be first
      * sent to the contract address. Once the contract's balance reaches `numberOfTokensToSwapToLiquidity` the
-     * `swapAndLiquify` of `Liquifier` will be executed. Half of the tokens will be swapped for PLS
-     * (or BNB on BSC) and together with the other half converted into a Token-PLS/Token-BNB LP Token.
+     * `swapAndLiquify` of `Liquifier` will be executed. Half of the tokens will be swapped for native tokens
+     * and together with the other half converted into a BSKR-NativeToken LP Token.
      *
      * See: `Liquifier`
-     */
+     */   
     uint256 internal constant numberOfTokensToSwapToLiquidity =
         TOTAL_SUPPLY / 1000; // 0.1% of the total supply
 
@@ -73,11 +73,11 @@ abstract contract Tokenomics {
      * @dev To add/edit/remove fees scroll down to the `addFees` function below
      */
 
-    // 0x55553eb70be81b2d4ca7c1330da90d306a615555
+    // TODO change the wallet addresses before releasing to mainnet
     address internal lotteryAddress =
-        0x13D44474B125B5582A42a826035A99e38a4962A7; // notice 1077e127 similar to Lottery
+        0x13D44474B125B5582A42a826035A99e38a4962A7;
     address internal marketingAddress =
-        0x4F06FCcAa501B7BB9f9AFcEFb20f7862Be050B7d; // notice the 5555 pre and post fix
+        0x4F06FCcAa501B7BB9f9AFcEFb20f7862Be050B7d;
     address internal burnAddress = 0x000000000000000000000000000000000000dEaD;
 
     enum FeeType {
@@ -86,7 +86,7 @@ abstract contract Tokenomics {
         Liquidity,
         Rfi,
         External,
-        ExternalToETH
+        ExternalToNativeToken
     }
     struct Fee {
         FeeType name;

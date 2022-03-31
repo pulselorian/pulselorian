@@ -12,7 +12,7 @@ interface IPancakeV2Router {
         address token,
         uint256 amountTokenDesired,
         uint256 amountTokenMin,
-        uint256 amountETHMin,
+        uint256 amountNativeTokenMin,
         address to,
         uint256 deadline
     )
@@ -20,7 +20,7 @@ interface IPancakeV2Router {
         payable
         returns (
             uint256 amountToken,
-            uint256 amountETH,
+            uint256 amountNativeToken,
             uint256 liquidity
         );
 

@@ -17,7 +17,6 @@ abstract contract LotteryRfiToken is
     Presaleable,
     Tokenomics
 {
-    // abstract contract BaseRfiToken is IERC20, IERC20Metadata, Ownable, Tokenomics {
     using SafeMath for uint256;
     using Address for address;
 
@@ -140,15 +139,18 @@ abstract contract LotteryRfiToken is
         address sender = _msgSender();
         require(
             sender != address(0),
-            "BaseRfiToken: burn from the zero address"
+            "LotteryRfiToken: burn from the zero address"
         );
         require(
             sender != address(burnAddress),
-            "BaseRfiToken: burn from the burn address"
+            "LotteryRfiToken: burn from the burn address"
         );
 
         uint256 balance = balanceOf(sender);
-        require(balance >= amount, "BaseRfiToken: burn amount exceeds balance");
+        require(
+            balance >= amount,
+            "LotteryRfiToken: burn amount exceeds balance"
+        );
 
         uint256 reflectedAmount = amount.mul(_getCurrentRate());
 
@@ -263,10 +265,14 @@ abstract contract LotteryRfiToken is
         return rAmount.div(currentRate);
     }
 
-    function excludeFromReward(address account) external onlyOwner {
-        require(!_isExcludedFromRewards[account], "Account is not included");
-        _exclude(account);
-    }
+    // Do we really need this control?
+    // event excludedFromReward(address account);
+    // function excludeFromReward(address account) external onlyOwner {
+    //     require(!_isExcludedFromRewards[account], "Account is not included");
+    //     _exclude(account);
+
+    //     emit excludedFromReward(account);
+    // }
 
     function _exclude(address account) internal {
         if (_reflectedBalances[account] > 0) {
@@ -278,18 +284,22 @@ abstract contract LotteryRfiToken is
         _excluded.push(account);
     }
 
-    function includeInReward(address account) external onlyOwner {
-        require(_isExcludedFromRewards[account], "Account is not excluded");
-        for (uint256 i = 0; i < _excluded.length; i++) {
-            if (_excluded[i] == account) {
-                _excluded[i] = _excluded[_excluded.length - 1];
-                _balances[account] = 0;
-                _isExcludedFromRewards[account] = false;
-                _excluded.pop();
-                break;
-            }
-        }
-    }
+    // Do we really need this control?
+    // event includedInReward(address account);
+    // function includeInReward(address account) external onlyOwner {
+    //     require(_isExcludedFromRewards[account], "Account is not excluded");
+    //     for (uint256 i = 0; i < _excluded.length; i++) {
+    //         if (_excluded[i] == account) {
+    //             _excluded[i] = _excluded[_excluded.length - 1];
+    //             _balances[account] = 0;
+    //             _isExcludedFromRewards[account] = false;
+    //             _excluded.pop();
+    //             break;
+    //         }
+    //     }
+
+    //     emit includedInReward(account);
+    // }
 
     function setExcludedFromFee(address account, bool value)
         external
@@ -309,11 +319,11 @@ abstract contract LotteryRfiToken is
     ) internal {
         require(
             owner != address(0),
-            "BaseRfiToken: approve from the zero address"
+            "LotteryRfiToken: approve from the zero address"
         );
         require(
             spender != address(0),
-            "BaseRfiToken: approve to the zero address"
+            "LotteryRfiToken: approve to the zero address"
         );
 
         _allowances[owner][spender] = amount;
@@ -347,15 +357,15 @@ abstract contract LotteryRfiToken is
     ) private {
         require(
             sender != address(0),
-            "BaseRfiToken: transfer from the zero address"
+            "LotteryRfiToken: transfer from the zero address"
         );
         require(
             recipient != address(0),
-            "BaseRfiToken: transfer to the zero address"
+            "LotteryRfiToken: transfer to the zero address"
         );
         require(
             sender != address(burnAddress),
-            "BaseRfiToken: transfer from the burn address"
+            "LotteryRfiToken: transfer from the burn address"
         );
         require(amount > 0, "Transfer amount must be greater than zero");
 

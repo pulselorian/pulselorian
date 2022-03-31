@@ -70,8 +70,8 @@ abstract contract Beskar is LotteryRfiToken, Liquifier, Antiwhale {
                 _burn(amount, currentRate, value, index);
             } else if (name == FeeType.Antiwhale) {
                 // TODO
-            } else if (name == FeeType.ExternalToETH) {
-                _takeFeeToETH(amount, currentRate, value, recipient, index);
+            } else if (name == FeeType.ExternalToNativeToken) {
+                _takeFeeToNativeToken(amount, currentRate, value, recipient, index);
             } else {
                 _takeFee(amount, currentRate, value, recipient, index);
             }
@@ -111,12 +111,12 @@ abstract contract Beskar is LotteryRfiToken, Liquifier, Antiwhale {
     }
 
     /**
-     * @dev When implemented this will convert the fee amount of tokens into PLS/BNB
+     * @dev When implemented this will convert the fee amount of BSRR into native tokens
      * and send to the recipient's wallet. Note that this reduces liquidity so it
      * might be a good idea to add a % into the liquidity fee for % you take our through
      * this method (just a suggestions)
      */
-    function _takeFeeToETH(
+    function _takeFeeToNativeToken(
         uint256 amount,
         uint256 currentRate,
         uint256 fee,
