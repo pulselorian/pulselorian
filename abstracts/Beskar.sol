@@ -3,11 +3,11 @@
  */
 pragma solidity ^0.8.9;
 
-import "./BaseRfiToken.sol";
+import "./LotteryRfiToken.sol";
 import "./Liquifier.sol";
 import "./Antiwhale.sol";
 
-abstract contract Beskar is BaseRfiToken, Liquifier, Antiwhale {
+abstract contract Beskar is LotteryRfiToken, Liquifier, Antiwhale {
     using SafeMath for uint256;
 
     // constructor(string memory _name, string memory _symbol, uint8 _decimals){
@@ -44,19 +44,19 @@ abstract contract Beskar is BaseRfiToken, Liquifier, Antiwhale {
         uint256,
         bool
     ) internal override {
-        // if ( !isInPresale ){
-        uint256 contractTokenBalance = balanceOf(address(this));
-        liquify(contractTokenBalance, sender);
-        // }
+        if (!isInPresale) {
+            uint256 contractTokenBalance = balanceOf(address(this));
+            liquify(contractTokenBalance, sender);
+        }
     }
 
     function _takeTransactionFees(uint256 amount, uint256 currentRate)
         internal
         override
     {
-        // if( isInPresale ){
-        //    return;
-        //}
+        if (isInPresale) {
+            return;
+        }
 
         uint256 feesCount = _getFeesCount();
         for (uint256 index = 0; index < feesCount; index++) {
@@ -111,7 +111,7 @@ abstract contract Beskar is BaseRfiToken, Liquifier, Antiwhale {
     }
 
     /**
-     * @dev When implemented this will convert the fee amount of tokens into ETH/BNB
+     * @dev When implemented this will convert the fee amount of tokens into PLS/BNB
      * and send to the recipient's wallet. Note that this reduces liquidity so it
      * might be a good idea to add a % into the liquidity fee for % you take our through
      * this method (just a suggestions)

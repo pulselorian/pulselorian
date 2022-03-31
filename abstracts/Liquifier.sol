@@ -15,25 +15,26 @@ abstract contract Liquifier is Ownable, Manageable {
     uint256 private withdrawableBalance;
 
     enum Env {
-        Testnet,
-        MainnetV1,
-        MainnetV2
+        BSCTestnet,
+        BSCMainnetV1,
+        BSCMainnetV2,
+        PLSTestnetv2b
     }
     Env private _env;
 
     // PancakeSwap V1
-    address private _mainnetRouterV1Address =
-        0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F; // TODOSSP change this
+    address private _bscMainnetV1RouterAddress =
+        0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F;
     // PancakeSwap V2
-    address private _mainnetRouterV2Address =
-        0x10ED43C718714eb63d5aA57B78B54704E256024E; // TODOSSP change this
+    address private _bscMainnetV2RouterAddress =
+        0x10ED43C718714eb63d5aA57B78B54704E256024E;
     // Testnet
-    // address private _testnetRouterAddress = 0xD99D1c33F9fC3444f8101754aBC46c52416550D1; // TODOSSP change this
+    // address private _testnetRouterAddress = 0xD99D1c33F9fC3444f8101754aBC46c52416550D1;
     // PancakeSwap Testnet = https://pancake.kiemtienonline360.com/
-    address private _testnetRouterAddress =
-        // 0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3;
-        0xb4A7633D8932de086c9264D5eb39a8399d7C0E3A; // TODOSSP change this
-
+    address private _bscTestnetRouterAddress =
+        0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3;
+    address private _plsTestnetv2bRouterAddress =
+        0xb4A7633D8932de086c9264D5eb39a8399d7C0E3A;
 
     IPancakeV2Router internal _router;
     address internal _pair;
@@ -71,14 +72,15 @@ abstract contract Liquifier is Ownable, Manageable {
         uint256 liquifyAmount
     ) internal {
         _env = env;
-        if (_env == Env.MainnetV1) {
-            _setRouterAddress(_mainnetRouterV1Address);
-        } else if (_env == Env.MainnetV2) {
-            _setRouterAddress(_mainnetRouterV2Address);
-        }
-        /*(_env == Env.Testnet)*/
-        else {
-            _setRouterAddress(_testnetRouterAddress);
+        if (_env == Env.BSCMainnetV1) {
+            _setRouterAddress(_bscMainnetV1RouterAddress);
+        } else if (_env == Env.BSCMainnetV2) {
+            _setRouterAddress(_bscMainnetV2RouterAddress);
+        } else if (_env == Env.BSCTestnet) {
+            _setRouterAddress(_bscTestnetRouterAddress);
+        } else {
+            // (_env == Env.PLSTestnetv2b)
+            _setRouterAddress(_plsTestnetv2bRouterAddress);
         }
 
         maxTransactionAmount = maxTx;
@@ -219,17 +221,17 @@ abstract contract Liquifier is Ownable, Manageable {
     }
 
     /**
-     * @dev The owner can withdraw ETH(BNB) collected in the contract from `swapAndLiquify`
-     * or if someone (accidentally) sends ETH/BNB directly to the contract.
+     * @dev The owner can withdraw PLS(BNB) collected in the contract from `swapAndLiquify`
+     * or if someone (accidentally) sends PLS/BNB directly to the contract.
      *
-     * Note: This addresses the contract flaw pointed out in the Certik Audit of Safemoon (SSL-03):
+     * Note: Fix for Safemoon contract flaw pointed out in the Certik Audit (SSL-03):
      *
-     * The swapAndLiquify function converts half of the contractTokenBalance SafeMoon tokens to BNB.
+     * The swapAndLiquify function converts half of the contractTokenBalance BSKR tokens to BNB/PLS.
      * For every swapAndLiquify function call, a small amount of BNB remains in the contract.
      * This amount grows over time with the swapAndLiquify function being called
-     * throughout the life of the contract. The Safemoon contract does not contain a method
-     * to withdraw these funds, and the BNB will be locked in the Safemoon contract forever.
-     * https://www.certik.org/projects/safemoon
+     * throughout the life of the contract. The BSKR contract does not contain a method
+     * to withdraw these funds, and the BNB/PLS will be locked in the BSKR contract forever.
+     * 
      */
     function withdrawLockedEth(address payable recipient) external onlyManager {
         require(

@@ -5,13 +5,13 @@
  *
  * BESKHA
  *
- * This token's base source code comes from Safemoon.
+ * This token's source code borrows some features/code from Safemoon.
  * It's has several changes to the tokenomics to make it a better internet currency
  * It's deflationary, has reflection or auto-staking feature, has burn feature,
  * includes automatic lottery and lot more
  * Visit https://www.pulselorian.com for more details
  *
- * - BSKRv5 audit
+ * - BSKR audit
  *      <Audit report link to be added here>
  *
  *
@@ -34,38 +34,26 @@ import "./abstracts/Beskar.sol";
  *
  * Reflection       2.0%
  * Burn             1.5%
- * Marketing        1.0%
+ * Marketing        0.5%
  * Liquidity        0.5%
  * Lottery          0.5%
  */
 
-contract BSKRv5 is Beskar {
-    constructor() Beskar(Env.Testnet) {
+contract BSKRv6 is Beskar {
+    constructor() Beskar(Env.PLSTestnetv2b) {
         // pre-approve the initial liquidity supply (to safe a bit of time)
         _approve(owner(), address(_router), ~uint256(0));
     }
 }
 
 /**
- * Todo (beta):
- *
- * - reorganize the sol file(s) to make put everything editable in a single .sol file
- *      and keep all other code in other .sol file(s)
- * - move variable values initialized in the contract to be constructor parameters
- * - add/remove setters/getter where appropriate
- * - add unit tests (via ganache-cli + truffle)
- * - add full dev evn (truffle) folders & files
- *
- * Todo:
  *
  * - implement `_takeFeeToETH` (currently just calls `_takeFee`)
  * - implement anti whale mechanics (via different pre-created libraries?), eg progressive tax
  * - implement anti sell mechanics
- * - address SSL-04 | Centralized risk in addLiquidity - https://www.certik.org/projects/safemoon
+ * - address SSL-04 | Centralized risk in addLiquidity - certik.org finding
  *      change the recipient to `address(this)` or implement a decentralized mechanism or
  *      smart-contract solution
- * - change Uniswap to PancakeSwap in contract/interface names and local var names
- * - change ETH to BNB in names and comments
  */
 
 /**
@@ -79,5 +67,5 @@ contract BSKRv5 is Beskar {
  * - `maxWalletBalance` works correctly and *unlimited* accounts are not subject to the limit
  * - accounts excluded from fees are not subjecto tx fees
  * - accounts excluded from rewards do not share in rewards
- * - ETH/BNB collected/stuck in the contract can be withdrawn (see)
+ * - PLS/BNB collected/stuck in the contract can be withdrawn (see)
  */

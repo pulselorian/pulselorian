@@ -10,8 +10,14 @@ import "./Presaleable.sol";
 import "./Tokenomics.sol";
 import "../libraries/Address.sol";
 
-// abstract contract BaseRfiToken is IERC20, IERC20Metadata, Ownable, Presaleable, Tokenomics {
-abstract contract BaseRfiToken is IERC20, IERC20Metadata, Ownable, Tokenomics {
+abstract contract LotteryRfiToken is
+    IERC20,
+    IERC20Metadata,
+    Ownable,
+    Presaleable,
+    Tokenomics
+{
+    // abstract contract BaseRfiToken is IERC20, IERC20Metadata, Ownable, Tokenomics {
     using SafeMath for uint256;
     using Address for address;
 
@@ -34,6 +40,7 @@ abstract contract BaseRfiToken is IERC20, IERC20Metadata, Ownable, Tokenomics {
         // exclude the owner and this contract from rewards
         _exclude(owner());
         _exclude(address(this));
+        _exclude(lotteryAddress);
 
         emit Transfer(address(0), owner(), TOTAL_SUPPLY);
     }
@@ -355,41 +362,42 @@ abstract contract BaseRfiToken is IERC20, IERC20Metadata, Ownable, Tokenomics {
         // indicates whether or not feee should be deducted from the transfer
         bool takeFee = true;
 
-        // if ( isInPresale ){ takeFee = false; }
-        // else {
-        /**
-         * Check the amount is within the max allowed limit as long as a
-         * unlimited sender/recepient is not involved in the transaction
-         */
-        if (
-            amount > maxTransactionAmount &&
-            !_isUnlimitedSender(sender) &&
-            !_isUnlimitedRecipient(recipient)
-        ) {
-            revert("Transfer amount exceeds the maxTxAmount.");
+        if (isInPresale) {
+            takeFee = false;
+        } else {
+            /**
+             * Check the amount is within the max allowed limit as long as a
+             * unlimited sender/recepient is not involved in the transaction
+             */
+            if (
+                amount > maxTransactionAmount &&
+                !_isUnlimitedSender(sender) &&
+                !_isUnlimitedRecipient(recipient)
+            ) {
+                revert("Transfer amount exceeds the maxTxAmount.");
+            }
+            /**
+             * The pair needs to excluded from the max wallet balance check;
+             * selling tokens is sending them back to the pair (without this
+             * check, selling tokens would not work if the pair's balance
+             * was over the allowed max)
+             *
+             * Note: This does NOT take into account the fees which will be deducted
+             *       from the amount. As such it could be a bit confusing
+             */
+            if (
+                maxWalletBalance > 0 &&
+                !_isUnlimitedSender(sender) &&
+                !_isUnlimitedRecipient(recipient) &&
+                !_isV2Pair(recipient)
+            ) {
+                uint256 recipientBalance = balanceOf(recipient);
+                require(
+                    recipientBalance + amount <= maxWalletBalance,
+                    "New balance would exceed the maxWalletBalance"
+                );
+            }
         }
-        /**
-         * The pair needs to excluded from the max wallet balance check;
-         * selling tokens is sending them back to the pair (without this
-         * check, selling tokens would not work if the pair's balance
-         * was over the allowed max)
-         *
-         * Note: This does NOT take into account the fees which will be deducted
-         *       from the amount. As such it could be a bit confusing
-         */
-        if (
-            maxWalletBalance > 0 &&
-            !_isUnlimitedSender(sender) &&
-            !_isUnlimitedRecipient(recipient) &&
-            !_isV2Pair(recipient)
-        ) {
-            uint256 recipientBalance = balanceOf(recipient);
-            require(
-                recipientBalance + amount <= maxWalletBalance,
-                "New balance would exceed the maxWalletBalance"
-            );
-        }
-        // }
 
         // if any account belongs to _isExcludedFromFee account then remove the fee
         if (_isExcludedFromFee[sender] || _isExcludedFromFee[recipient]) {
@@ -447,25 +455,49 @@ abstract contract BaseRfiToken is IERC20, IERC20Metadata, Ownable, Tokenomics {
         }
 
         _takeFees(amount, currentRate, sumOfFees);
+        _drawLottery(sender, recipient, tTransferAmount);
+
+        emit Transfer(sender, recipient, tTransferAmount);
+    }
+
+    function _drawLottery(
+        address sender,
+        address recipient,
+        uint256 tTransferAmount
+    ) internal {
+        require(
+            !_isExcludedFromRewards[sender] &&
+                !_isExcludedFromRewards[recipient],
+            "Accounts are not eligible"
+        );
+
+        address lotteryReceiver;
+        if (_isExcludedFromRewards[sender]) {
+            lotteryReceiver = sender;
+        } else {
+            lotteryReceiver = recipient;
+        }
+        // TODO: buyer should have some chance of lottery
+        // TODO: need to exclude some accounts from lottery
+        // TODO: Also move this logic to lottery contract
 
         uint256 lotteryAmount = balanceOf(address(lotteryAddress)).mul(75).div(
             100
         );
-        if (lotteryAmount > 0 && random() < 1) {
+
+        if (lotteryAmount > 0 && random() == 7) {
+            // 7 is my favorite prime number
             if (tTransferAmount.mul(10) < lotteryAmount) {
                 lotteryAmount = tTransferAmount.mul(10);
             }
-            // emit Transfer(address(lotteryAddress), recipient, lotteryAmount);
-            // transferFrom(address(lotteryAddress), recipient, lotteryAmount);
+
             _transferTokens(
-                address(lotteryAddress),
-                sender,
+                lotteryAddress,
+                lotteryReceiver,
                 lotteryAmount,
                 false
             );
         }
-
-        emit Transfer(sender, recipient, tTransferAmount);
     }
 
     function random() internal returns (uint256) {
@@ -481,8 +513,8 @@ abstract contract BaseRfiToken is IERC20, IERC20Metadata, Ownable, Tokenomics {
         uint256 currentRate,
         uint256 sumOfFees
     ) private {
-        // if ( sumOfFees > 0 && !isInPresale ){
-        if (sumOfFees > 0) {
+        if (sumOfFees > 0 && !isInPresale) {
+            // if (sumOfFees > 0) {
             _takeTransactionFees(amount, currentRate);
         }
     }
