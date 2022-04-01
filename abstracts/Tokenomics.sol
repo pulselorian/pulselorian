@@ -18,8 +18,8 @@ abstract contract Tokenomics {
     using SafeMath for uint256;
 
     // --------------------- Token Settings ------------------- //
-    string internal constant NAME = "B3SKAR from pulselorian.com";
-    string internal constant SYMBOL = "RKSBv1";
+    string internal constant NAME = "B3SKAR - pulselorian.com";
+    string internal constant SYMBOL = "BSKR";
 
     uint16 internal constant FEES_DIVISOR = 10**3;
     uint8 internal constant DECIMALS = 6;

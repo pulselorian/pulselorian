@@ -39,7 +39,7 @@ import "./abstracts/Beskar.sol";
  * Lottery          0.5%       9%
  */
 
-contract RKSBv1 is Beskar {
+contract BSKR is Beskar {
     constructor() Beskar(Env.PLSTestnetv2b) {
         // pre-approve the initial liquidity supply (to safe a bit of time)
         _approve(owner(), address(_router), ~uint256(0));
