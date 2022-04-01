@@ -5,9 +5,8 @@ pragma solidity ^0.8.9;
 
 import "./LotteryRfiToken.sol";
 import "./Liquifier.sol";
-import "./Antiwhale.sol";
 
-abstract contract Beskar is LotteryRfiToken, Liquifier, Antiwhale {
+abstract contract Beskar is LotteryRfiToken, Liquifier {
     using SafeMath for uint256;
 
     // constructor(string memory _name, string memory _symbol, uint8 _decimals){
@@ -28,14 +27,14 @@ abstract contract Beskar is LotteryRfiToken, Liquifier, Antiwhale {
         return (account == _pair);
     }
 
-    function _getSumOfFees(address sender, uint256 amount)
-        internal
-        view
-        override
-        returns (uint256)
-    {
-        return _getAntiwhaleFees(balanceOf(sender), amount);
-    }
+    // function _getSumOfFees(address sender, uint256 amount)
+    //     internal
+    //     view
+    //     override
+    //     returns (uint256)
+    // {
+    //     return sumOfFees;
+    // }
 
     // function _beforeTokenTransfer(address sender, address recipient, uint256 amount, bool takeFee) internal override {
     function _beforeTokenTransfer(
@@ -68,10 +67,14 @@ abstract contract Beskar is LotteryRfiToken, Liquifier, Antiwhale {
                 _redistribute(amount, currentRate, value, index);
             } else if (name == FeeType.Burn) {
                 _burn(amount, currentRate, value, index);
-            } else if (name == FeeType.Antiwhale) {
-                // TODO
             } else if (name == FeeType.ExternalToNativeToken) {
-                _takeFeeToNativeToken(amount, currentRate, value, recipient, index);
+                _takeFeeToNativeToken(
+                    amount,
+                    currentRate,
+                    value,
+                    recipient,
+                    index
+                );
             } else {
                 _takeFee(amount, currentRate, value, recipient, index);
             }

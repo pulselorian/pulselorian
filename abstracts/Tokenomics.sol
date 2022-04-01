@@ -19,7 +19,7 @@ abstract contract Tokenomics {
 
     // --------------------- Token Settings ------------------- //
     string internal constant NAME = "B3SKAR from pulselorian.com";
-    string internal constant SYMBOL = "BSKRv6";
+    string internal constant SYMBOL = "RKSBv1";
 
     uint16 internal constant FEES_DIVISOR = 10**3;
     uint8 internal constant DECIMALS = 6;
@@ -63,7 +63,7 @@ abstract contract Tokenomics {
      * and together with the other half converted into a BSKR-NativeToken LP Token.
      *
      * See: `Liquifier`
-     */   
+     */
     uint256 internal constant numberOfTokensToSwapToLiquidity =
         TOTAL_SUPPLY / 1000; // 0.1% of the total supply
 
@@ -76,12 +76,10 @@ abstract contract Tokenomics {
     // TODO change the wallet addresses before releasing to mainnet
     address internal lotteryAddress =
         0x13D44474B125B5582A42a826035A99e38a4962A7;
-    address internal marketingAddress =
-        0x4F06FCcAa501B7BB9f9AFcEFb20f7862Be050B7d;
+    address internal growthAddress = 0x4F06FCcAa501B7BB9f9AFcEFb20f7862Be050B7d;
     address internal burnAddress = 0x000000000000000000000000000000000000dEaD;
 
     enum FeeType {
-        Antiwhale,
         Burn,
         Liquidity,
         Rfi,
@@ -124,7 +122,7 @@ abstract contract Tokenomics {
          */
         _addFee(FeeType.Rfi, 20, address(this));
         _addFee(FeeType.Burn, 15, burnAddress);
-        _addFee(FeeType.External, 5, marketingAddress);
+        _addFee(FeeType.External, 10, growthAddress);
         _addFee(FeeType.Liquidity, 5, address(this));
         _addFee(FeeType.External, 5, lotteryAddress);
     }
@@ -169,4 +167,12 @@ abstract contract Tokenomics {
         Fee memory fee = _getFeeStruct(index);
         return fee.total;
     }
+
+    // function _getSumOfFees()
+    //     internal
+    //     view
+    //     returns (uint256)
+    // {
+    //     return sumOfFees;
+    // }
 }

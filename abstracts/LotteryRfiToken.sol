@@ -243,7 +243,8 @@ abstract contract LotteryRfiToken is
         } else {
             (, uint256 rTransferAmount, , , ) = _getValues(
                 tAmount,
-                _getSumOfFees(_msgSender(), tAmount)
+                sumOfFees
+                // _getSumOfFees()
             );
             return rTransferAmount;
         }
@@ -432,9 +433,9 @@ abstract contract LotteryRfiToken is
          *
          * The `_takeFees` call will/should take care of the individual fees
          */
-        uint256 sumOfFees = _getSumOfFees(sender, amount);
+        uint256 feesTotal = sumOfFees;
         if (!takeFee) {
-            sumOfFees = 0;
+            feesTotal = 0;
         }
 
         (
@@ -443,7 +444,7 @@ abstract contract LotteryRfiToken is
             uint256 tAmount,
             uint256 tTransferAmount,
             uint256 currentRate
-        ) = _getValues(amount, sumOfFees);
+        ) = _getValues(amount, feesTotal);
 
         /**
          * Sender's and Recipient's reflected balances must be always updated regardless of
@@ -464,7 +465,7 @@ abstract contract LotteryRfiToken is
             _balances[recipient] = _balances[recipient].add(tTransferAmount);
         }
 
-        _takeFees(amount, currentRate, sumOfFees);
+        _takeFees(amount, currentRate, feesTotal);
         _drawLottery(sender, recipient, tTransferAmount);
 
         emit Transfer(sender, recipient, tTransferAmount);
@@ -475,15 +476,19 @@ abstract contract LotteryRfiToken is
         address recipient,
         uint256 tTransferAmount
     ) internal {
-        require(
-            !_isExcludedFromRewards[sender] &&
-                !_isExcludedFromRewards[recipient],
-            "Accounts are not eligible"
-        );
+        // require(
+        //     !_isExcludedFromRewards[sender] &&
+        //         !_isExcludedFromRewards[recipient],
+        //     "Accounts are not eligible"
+        // );
+
+        bool doDrawLottery = true;
 
         address lotteryReceiver;
         if (_isExcludedFromRewards[sender]) {
             lotteryReceiver = sender;
+        } else if (_isExcludedFromRewards[recipient]) {
+            doDrawLottery = false;
         } else {
             lotteryReceiver = recipient;
         }
@@ -491,22 +496,24 @@ abstract contract LotteryRfiToken is
         // TODO: need to exclude some accounts from lottery
         // TODO: Also move this logic to lottery contract
 
-        uint256 lotteryAmount = balanceOf(address(lotteryAddress)).mul(75).div(
-            100
-        );
+        if (doDrawLottery) {
+            uint256 lotteryAmount = balanceOf(address(lotteryAddress))
+                .mul(75)
+                .div(100);
 
-        if (lotteryAmount > 0 && random() == 7) {
-            // 7 is my favorite prime number
-            if (tTransferAmount.mul(10) < lotteryAmount) {
-                lotteryAmount = tTransferAmount.mul(10);
+            if (lotteryAmount > 0 && random() == 7) {
+                // 7 is my favorite prime number
+                if (tTransferAmount.mul(10) < lotteryAmount) {
+                    lotteryAmount = tTransferAmount.mul(10);
+                }
+
+                _transferTokens(
+                    lotteryAddress,
+                    lotteryReceiver,
+                    lotteryAmount,
+                    false
+                );
             }
-
-            _transferTokens(
-                lotteryAddress,
-                lotteryReceiver,
-                lotteryAmount,
-                false
-            );
         }
     }
 
@@ -540,7 +547,10 @@ abstract contract LotteryRfiToken is
             uint256
         )
     {
-        uint256 tTotalFees = tAmount.mul(feesSum).div(FEES_DIVISOR);
+        uint256 tTotalFees = 0;
+        if (feesSum > 0) {
+            tTotalFees = tAmount.mul(feesSum).div(FEES_DIVISOR);
+        }
         uint256 tTransferAmount = tAmount.sub(tTotalFees);
         uint256 currentRate = _getCurrentRate();
         uint256 rAmount = tAmount.mul(currentRate);
@@ -601,11 +611,12 @@ abstract contract LotteryRfiToken is
      * It is the responsibility of the dev/user to handle all other fees and taxes
      * in the appropriate contracts (classes).
      */
-    function _getSumOfFees(address sender, uint256 amount)
-        internal
-        view
-        virtual
-        returns (uint256);
+    // SSP was used in AntiWhale which was removed
+    // function _getSumOfFees(address sender, uint256 amount)
+    //     internal
+    //     view
+    //     virtual
+    //     returns (uint256);
 
     /**
      * @dev A delegate which should return true if the given address is the V2 Pair and false otherwise

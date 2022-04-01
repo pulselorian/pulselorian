@@ -187,7 +187,8 @@ abstract contract Liquifier is Ownable, Manageable {
             // 0 = accept any amount (slippage is inevitable)
             0,
             // this is a centralized risk if the owner's account is ever compromised (see Certik SSL-04)
-            owner(),
+            // owner(),
+            address(this),
             block.timestamp
         );
 
@@ -215,6 +216,7 @@ abstract contract Liquifier is Ownable, Manageable {
      * NOT be converted into liquidity.
      */
     // Probably we do not want this control - instead let's cap the liquidity to a fixed percent say 15%
+    // we discussed and decided to not limit the liquidity addition as it serves as another burn feature
     
     // event SwapAndLiquifyEnabledUpdated(bool enabled);
     // function setSwapAndLiquifyEnabled(bool enabled) external onlyManager {
