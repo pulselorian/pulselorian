@@ -3,7 +3,7 @@
  * telegram: https://t.me/ThePulselorian
  * twitter: https://twitter.com/ThePulseLorian
  *
- * BESKHA
+ * BSKR (B3SKAR)
  *
  * BSKR's source code borrows some features/code from Safemoon.
  * It's has several changes to the tokenomics to make it a better internet currency
@@ -15,12 +15,12 @@
  *      <Audit report link to be added here>
  *
  *
- * (   (  (  (     (   (( (   .  (   (    (( (   ((
- * )\  )\ )\ )\    )\ (\())\   . )\  )\   ))\)\  ))\
- *((_)((_)(_)(_)  ((_))(_)(_)   ((_)((_)(((_)_()((_)))
- *| _ \ | | | |  / __| __| |   / _ \| _ \_ _|   \ \| |
- *|  _/ |_| | |__\__ \ _|| |__| (_) |   /| || - | .  |
- *|_|  \___/|____|___/___|____|\___/|_|_\___|_|_|_|\_|
+ *    (   (  (  (     (   (( (   .  (   (    (( (   ((
+ *    )\  )\ )\ )\    )\ (\())\   . )\  )\   ))\)\  ))\
+ *   ((_)((_)(_)(_)  ((_))(_)(_)   ((_)((_)(((_)_()((_)))
+ *   | _ \ | | | |  / __| __| |   / _ \| _ \_ _|   \ \| |
+ *   |  _/ |_| | |__\__ \ _|| |__| (_) |   /| || - | .  |
+ *   |_|  \___/|____|___/___|____|\___/|_|_\___|_|_|_|\_|
  *
  *
  * SPDX-License-Identifier: MIT
@@ -41,7 +41,7 @@ import "./abstracts/Beskar.sol";
 
 contract BSKR is Beskar {
     constructor() Beskar(Env.PLSTestnetv2b) {
-        // pre-approve the initial liquidity supply (to safe a bit of time)
+        // pre-approve the initial liquidity supply
         _approve(owner(), address(_router), ~uint256(0));
     }
 }

@@ -158,7 +158,6 @@ abstract contract Tokenomics {
         fee.total = fee.total.add(amount);
     }
 
-    // function getCollectedFeeTotal(uint256 index) external view returns (uint256){
     function getCollectedFeeTotal(uint256 index)
         internal
         view
@@ -167,12 +166,4 @@ abstract contract Tokenomics {
         Fee memory fee = _getFeeStruct(index);
         return fee.total;
     }
-
-    // function _getSumOfFees()
-    //     internal
-    //     view
-    //     returns (uint256)
-    // {
-    //     return sumOfFees;
-    // }
 }

@@ -266,15 +266,6 @@ abstract contract LotteryRfiToken is
         return rAmount.div(currentRate);
     }
 
-    // Do we really need this control?
-    // event excludedFromReward(address account);
-    // function excludeFromReward(address account) external onlyOwner {
-    //     require(!_isExcludedFromRewards[account], "Account is not included");
-    //     _exclude(account);
-
-    //     emit excludedFromReward(account);
-    // }
-
     function _exclude(address account) internal {
         if (_reflectedBalances[account] > 0) {
             _balances[account] = tokenFromReflection(
@@ -283,30 +274,6 @@ abstract contract LotteryRfiToken is
         }
         _isExcludedFromRewards[account] = true;
         _excluded.push(account);
-    }
-
-    // Do we really need this control?
-    // event includedInReward(address account);
-    // function includeInReward(address account) external onlyOwner {
-    //     require(_isExcludedFromRewards[account], "Account is not excluded");
-    //     for (uint256 i = 0; i < _excluded.length; i++) {
-    //         if (_excluded[i] == account) {
-    //             _excluded[i] = _excluded[_excluded.length - 1];
-    //             _balances[account] = 0;
-    //             _isExcludedFromRewards[account] = false;
-    //             _excluded.pop();
-    //             break;
-    //         }
-    //     }
-
-    //     emit includedInReward(account);
-    // }
-
-    function setExcludedFromFee(address account, bool value)
-        external
-        onlyOwner
-    {
-        _isExcludedFromFee[account] = value;
     }
 
     function isExcludedFromFee(address account) public view returns (bool) {

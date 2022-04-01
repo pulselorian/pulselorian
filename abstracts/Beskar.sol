@@ -9,7 +9,6 @@ import "./Liquifier.sol";
 abstract contract Beskar is LotteryRfiToken, Liquifier {
     using SafeMath for uint256;
 
-    // constructor(string memory _name, string memory _symbol, uint8 _decimals){
     constructor(Env _env) {
         initializeLiquiditySwapper(
             _env,
@@ -27,16 +26,6 @@ abstract contract Beskar is LotteryRfiToken, Liquifier {
         return (account == _pair);
     }
 
-    // function _getSumOfFees(address sender, uint256 amount)
-    //     internal
-    //     view
-    //     override
-    //     returns (uint256)
-    // {
-    //     return sumOfFees;
-    // }
-
-    // function _beforeTokenTransfer(address sender, address recipient, uint256 amount, bool takeFee) internal override {
     function _beforeTokenTransfer(
         address sender,
         address,

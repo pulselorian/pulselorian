@@ -212,19 +212,6 @@ abstract contract Liquifier is Ownable, Manageable {
     }
 
     /**
-     * @dev Sends the swap and liquify flag to the provided value. If set to `false` tokens collected in the contract will
-     * NOT be converted into liquidity.
-     */
-    // Probably we do not want this control - instead let's cap the liquidity to a fixed percent say 15%
-    // we discussed and decided to not limit the liquidity addition as it serves as another burn feature
-    
-    // event SwapAndLiquifyEnabledUpdated(bool enabled);
-    // function setSwapAndLiquifyEnabled(bool enabled) external onlyManager {
-    //     swapAndLiquifyEnabled = enabled;
-    //     emit SwapAndLiquifyEnabledUpdated(swapAndLiquifyEnabled);
-    // }
-
-    /**
      * @dev The owner can withdraw native token collected in the contract from `swapAndLiquify`
      * or if someone (accidentally) sends native token directly to the contract.
      *
