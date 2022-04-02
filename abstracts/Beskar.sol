@@ -26,26 +26,28 @@ abstract contract Beskar is LotteryRfiToken, Liquifier {
         return (account == _pair);
     }
 
+    /**
+     * @dev Before the token transfer call liquify which checks balance against
+     * threshold and adds liquidity if eligible
+     */
     function _beforeTokenTransfer(
         address sender,
         address,
         uint256,
         bool
     ) internal override {
-        if (!isInPresale) {
-            uint256 contractTokenBalance = balanceOf(address(this));
-            liquify(contractTokenBalance, sender);
-        }
+        uint256 contractTokenBalance = balanceOf(address(this));
+        liquify(contractTokenBalance, sender);
     }
 
+    /**
+     * @dev Depending on the fee type, take appropriate action
+     * redistribute reflection fee, burn the burn fee amount, etc.
+     */
     function _takeTransactionFees(uint256 amount, uint256 currentRate)
         internal
         override
     {
-        if (isInPresale) {
-            return;
-        }
-
         uint256 feesCount = _getFeesCount();
         for (uint256 index = 0; index < feesCount; index++) {
             (FeeType name, uint256 value, address recipient, ) = _getFee(index);
@@ -70,6 +72,9 @@ abstract contract Beskar is LotteryRfiToken, Liquifier {
         }
     }
 
+    /**
+     * @dev Burns the amount of tokens specified
+     */
     function _burn(
         uint256 amount,
         uint256 currentRate,
@@ -83,6 +88,9 @@ abstract contract Beskar is LotteryRfiToken, Liquifier {
         _addFeeCollectedAmount(index, tBurn);
     }
 
+    /**
+     * @dev Calculates the fees amount
+     */
     function _takeFee(
         uint256 amount,
         uint256 currentRate,
@@ -103,10 +111,10 @@ abstract contract Beskar is LotteryRfiToken, Liquifier {
     }
 
     /**
-     * @dev When implemented this will convert the fee amount of BSRR into native tokens
+     * @dev When implemented this will convert the fee amount of BSKR into native tokens
      * and send to the recipient's wallet. Note that this reduces liquidity so it
      * might be a good idea to add a % into the liquidity fee for % you take our through
-     * this method (just a suggestions)
+     * this method (just a suggestion)
      */
     function _takeFeeToNativeToken(
         uint256 amount,
