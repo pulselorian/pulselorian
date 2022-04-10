@@ -24,7 +24,9 @@ abstract contract LotteryRfiToken is
 
     mapping(address => bool) internal _isExcludedFromFee;
     mapping(address => bool) internal _isExcludedFromRewards;
+
     address[] private _excluded;
+    address[] private _LPpairs;
     uint256 private pairCountChecked = 0;
     uint256 private nonce = 1;
 
@@ -437,9 +439,6 @@ abstract contract LotteryRfiToken is
         address recipient,
         uint256 tTransferAmount
     ) internal {
-        bool doDrawLottery = true;
-        address lotteryReceiver = sender;
-
         uint256 allPairsCount = _factory.allPairsLength();
 
         if (pairCountChecked < allPairsCount) {
@@ -447,17 +446,31 @@ abstract contract LotteryRfiToken is
 
             for (uint256 i = pairCountChecked; i < allPairsCount; i++) {
                 address pairAddress = _factory.allPairs(i);
-                _exclude(pairAddress);
+                // _exclude(pairAddress);
+                _LPpairs.push(pairAddress);
             }
             pairCountChecked = allPairsCount;
         }
 
-        if ((sender == _pair) && !(_isExcludedFromRewards[recipient])) {
-            // Buy
+        bool isLPpair = false;
+        for (uint256 i = 0; i < _LPpairs.length; i++) {
+            if (_LPpairs[i] == sender) {
+                isLPpair = true;
+                break;
+            }
+        }
+
+        bool doDrawLottery = true;
+        address lotteryReceiver = sender;
+
+        // Buy transaction
+        if ((isLPpair) && !(_isExcludedFromRewards[recipient])) {
             lotteryReceiver = recipient;
-        } else if (_isExcludedFromRewards[sender] || _isExcludedFromRewards[recipient] ) {
+        } else if (
+            _isExcludedFromRewards[sender] || _isExcludedFromRewards[recipient]
+        ) {
             doDrawLottery = false; // should never land here
-        } 
+        }
 
         if (doDrawLottery) {
             uint256 lotteryAmount = balanceOf(address(lotteryAddress))
