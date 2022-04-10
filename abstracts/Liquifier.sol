@@ -3,13 +3,12 @@
  */
 pragma solidity ^0.8.9;
 
-import "./Ownable.sol";
 import "./Manageable.sol";
 import "../libraries/SafeMath.sol";
 import "../interfaces/IPancakeV2Router.sol";
 import "../interfaces/IPancakeV2Factory.sol";
 
-abstract contract Liquifier is Ownable, Manageable {
+abstract contract Liquifier is Manageable {
     using SafeMath for uint256;
 
     uint256 private withdrawableBalance;
@@ -31,12 +30,14 @@ abstract contract Liquifier is Ownable, Manageable {
     // Testnet
     // address private _testnetRouterAddress = 0xD99D1c33F9fC3444f8101754aBC46c52416550D1;
     // PancakeSwap Testnet = https://pancake.kiemtienonline360.com/
+    // https://amm.kiemtienonline360.com/#BSC
     address private _bscTestnetRouterAddress =
         0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3;
     address private _plsTestnetv2bRouterAddress =
         0xb4A7633D8932de086c9264D5eb39a8399d7C0E3A;
 
     IPancakeV2Router internal _router;
+    IPancakeV2Factory internal _factory;
     address internal _pair;
 
     bool private inSwapAndLiquify;
@@ -108,8 +109,6 @@ abstract contract Liquifier is Ownable, Manageable {
             !inSwapAndLiquify &&
             (sender != _pair)
         ) {
-            // TODO check if the `(sender != _pair)` is necessary because that basically
-            // stops swap and liquify for all "buy" transactions
             _swapAndLiquify(contractTokenBalance);
         }
     }
@@ -120,9 +119,11 @@ abstract contract Liquifier is Ownable, Manageable {
      */
     function _setRouterAddress(address router) private {
         IPancakeV2Router _newPancakeRouter = IPancakeV2Router(router);
-        _pair = IPancakeV2Factory(_newPancakeRouter.factory()).createPair(
+        _factory = IPancakeV2Factory(_newPancakeRouter.factory());
+        _pair = _factory.createPair(
             address(this),
             _newPancakeRouter.WPLS()
+            // _newPancakeRouter.WETH()
         );
         _router = _newPancakeRouter;
         emit RouterSet(router);
@@ -156,6 +157,7 @@ abstract contract Liquifier is Ownable, Manageable {
         address[] memory path = new address[](2);
         path[0] = address(this);
         path[1] = _router.WPLS();
+        // path[1] = _router.WETH();
 
         _approveDelegate(address(this), address(_router), tokenAmount);
 
@@ -171,26 +173,31 @@ abstract contract Liquifier is Ownable, Manageable {
         );
     }
 
-    function _addLiquidity(uint256 tokenAmount, uint256 nativeTokenAmount) private {
+    function _addLiquidity(uint256 tokenAmount, uint256 nativeTokenAmount)
+        private
+    {
         // approve token transfer to cover all possible scenarios
         _approveDelegate(address(this), address(_router), tokenAmount);
 
         // add tahe liquidity
-        (uint256 tokenAmountSent, uint256 nativeTokenAmountSent, uint256 liquidity) = _router
-            .addLiquidityETH{value: nativeTokenAmount}(
-            address(this),
-            tokenAmount,
-            // Bounds the extent to which the Wrapped native token/token price can go up before the transaction reverts.
-            // Must be <= amountTokenDesired; 0 = accept any amount (slippage is inevitable)
-            0,
-            // Bounds the extent to which the token/Wrapped native token price can go up before the transaction reverts.
-            // 0 = accept any amount (slippage is inevitable)
-            0,
-            // this is a centralized risk if the owner's account is ever compromised (see Certik SSL-04)
-            // owner(),
-            address(this),
-            block.timestamp
-        );
+        (
+            uint256 tokenAmountSent,
+            uint256 nativeTokenAmountSent,
+            uint256 liquidity
+        ) = _router.addLiquidityETH{value: nativeTokenAmount}(
+                address(this),
+                tokenAmount,
+                // Bounds the extent to which the Wrapped native token/token price can go up before the transaction reverts.
+                // Must be <= amountTokenDesired; 0 = accept any amount (slippage is inevitable)
+                0,
+                // Bounds the extent to which the token/Wrapped native token price can go up before the transaction reverts.
+                // 0 = accept any amount (slippage is inevitable)
+                0,
+                // this is a centralized risk if the owner's account is ever compromised (see Certik SSL-04)
+                // owner(),
+                address(this),
+                block.timestamp
+            );
 
         // fix the forever locked native token as per the Safemoon's certik audit
         /**
@@ -222,9 +229,12 @@ abstract contract Liquifier is Ownable, Manageable {
      * This amount grows over time with the swapAndLiquify function being called
      * throughout the life of the contract. The BSKR contract does not contain a method
      * to withdraw these funds, and the native token will be locked in the BSKR contract forever.
-     * 
+     *
      */
-    function withdrawLockedNativeTokens(address payable recipient) external onlyManager {
+    function withdrawLockedNativeTokens(address payable recipient)
+        external
+        onlyManager
+    {
         require(
             recipient != address(0),
             "Cannot withdraw the native token balance to the zero address"

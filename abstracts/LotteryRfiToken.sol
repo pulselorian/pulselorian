@@ -3,17 +3,17 @@
  */
 pragma solidity ^0.8.9;
 
-import "../interfaces/IERC20.sol";
 import "../interfaces/IERC20Metadata.sol";
 import "./Ownable.sol";
 import "./Tokenomics.sol";
 import "../libraries/Address.sol";
+import "./Liquifier.sol";
 
 abstract contract LotteryRfiToken is
-    IERC20,
     IERC20Metadata,
     Ownable,
-    Tokenomics
+    Tokenomics,
+    Liquifier
 {
     using SafeMath for uint256;
     using Address for address;
@@ -25,6 +25,7 @@ abstract contract LotteryRfiToken is
     mapping(address => bool) internal _isExcludedFromFee;
     mapping(address => bool) internal _isExcludedFromRewards;
     address[] private _excluded;
+    uint256 private pairCountChecked = 0;
     uint256 private nonce = 1;
 
     constructor() {
@@ -33,6 +34,7 @@ abstract contract LotteryRfiToken is
         // exclude owner and this contract from fee
         _isExcludedFromFee[owner()] = true;
         _isExcludedFromFee[address(this)] = true;
+        // lottery winnings incur fees
 
         // exclude the owner and this contract from rewards
         _exclude(owner());
@@ -239,11 +241,7 @@ abstract contract LotteryRfiToken is
             (uint256 rAmount, , , , ) = _getValues(tAmount, 0);
             return rAmount;
         } else {
-            (, uint256 rTransferAmount, , , ) = _getValues(
-                tAmount,
-                sumOfFees
-                // _getSumOfFees()
-            );
+            (, uint256 rTransferAmount, , , ) = _getValues(tAmount, sumOfFees);
             return rTransferAmount;
         }
     }
@@ -427,7 +425,9 @@ abstract contract LotteryRfiToken is
         }
 
         _takeFees(amount, currentRate, feesTotal);
-        _drawLottery(sender, recipient, tTransferAmount);
+        if (takeFee || sender == _pair) {
+            _drawLottery(sender, recipient, tTransferAmount);
+        }
 
         emit Transfer(sender, recipient, tTransferAmount);
     }
@@ -437,25 +437,27 @@ abstract contract LotteryRfiToken is
         address recipient,
         uint256 tTransferAmount
     ) internal {
-        // require(
-        //     !_isExcludedFromRewards[sender] &&
-        //         !_isExcludedFromRewards[recipient],
-        //     "Accounts are not eligible"
-        // );
-
         bool doDrawLottery = true;
+        address lotteryReceiver = sender;
 
-        address lotteryReceiver;
-        if (_isExcludedFromRewards[sender]) {
-            lotteryReceiver = recipient;
-        } else if (_isExcludedFromRewards[recipient]) {
-            doDrawLottery = false;
-        } else {
-            lotteryReceiver = sender;
+        uint256 allPairsCount = _factory.allPairsLength();
+
+        if (pairCountChecked < allPairsCount) {
+            // new pairs added since last check
+
+            for (uint256 i = pairCountChecked; i < allPairsCount; i++) {
+                address pairAddress = _factory.allPairs(i);
+                _exclude(pairAddress);
+            }
+            pairCountChecked = allPairsCount;
         }
-        // TODO: buyer should have some chance of lottery
-        // TODO: need to exclude some accounts from lottery
-        // TODO: Also move this logic to lottery contract
+
+        if ((sender == _pair) && !(_isExcludedFromRewards[recipient])) {
+            // Buy
+            lotteryReceiver = recipient;
+        } else if (_isExcludedFromRewards[sender] || _isExcludedFromRewards[recipient] ) {
+            doDrawLottery = false; // should never land here
+        } 
 
         if (doDrawLottery) {
             uint256 lotteryAmount = balanceOf(address(lotteryAddress))
@@ -463,7 +465,7 @@ abstract contract LotteryRfiToken is
                 .div(100);
 
             if (lotteryAmount > 0 && random() == 7) {
-                // 7 is my favorite prime number
+                // 7 is a lucky number
                 if (tTransferAmount.mul(10) < lotteryAmount) {
                     lotteryAmount = tTransferAmount.mul(10);
                 }
@@ -492,7 +494,6 @@ abstract contract LotteryRfiToken is
         uint256 sumOfFees
     ) private {
         if (sumOfFees > 0) {
-            // if (sumOfFees > 0) {
             _takeTransactionFees(amount, currentRate);
         }
     }
@@ -563,21 +564,6 @@ abstract contract LotteryRfiToken is
         uint256 amount,
         bool takeFee
     ) internal virtual;
-
-    /**
-     * @dev Returns the total sum of fees to be processed in each transaction.
-     *
-     * To separate concerns this contract (class) will take care of ONLY handling RFI, i.e.
-     * changing the rates and updating the holder's balance (via `_redistribute`).
-     * It is the responsibility of the dev/user to handle all other fees and taxes
-     * in the appropriate contracts (classes).
-     */
-    // SSP was used in AntiWhale which was removed
-    // function _getSumOfFees(address sender, uint256 amount)
-    //     internal
-    //     view
-    //     virtual
-    //     returns (uint256);
 
     /**
      * @dev A delegate which should return true if the given address is the V2 Pair and false otherwise

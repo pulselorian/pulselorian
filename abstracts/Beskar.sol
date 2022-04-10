@@ -4,9 +4,9 @@
 pragma solidity ^0.8.9;
 
 import "./LotteryRfiToken.sol";
-import "./Liquifier.sol";
 
-abstract contract Beskar is LotteryRfiToken, Liquifier {
+
+abstract contract Beskar is LotteryRfiToken {
     using SafeMath for uint256;
 
     constructor(Env _env) {
@@ -133,4 +133,6 @@ abstract contract Beskar is LotteryRfiToken, Liquifier {
     ) internal override {
         _approve(owner, spender, amount);
     }
+
+    
 }

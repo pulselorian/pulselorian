@@ -14,4 +14,8 @@ interface IPancakeV2Factory {
     function createPair(address tokenA, address tokenB)
         external
         returns (address pair);
+
+    function allPairs(uint256) external view returns (address pair);
+
+    function allPairsLength() external view returns (uint256);
 }
