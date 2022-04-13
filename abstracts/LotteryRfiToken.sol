@@ -8,6 +8,7 @@ import "./Ownable.sol";
 import "./Tokenomics.sol";
 import "../libraries/Address.sol";
 import "./Liquifier.sol";
+import "../interfaces/IPancakePair.sol";
 
 abstract contract LotteryRfiToken is
     IERC20Metadata,
@@ -427,18 +428,14 @@ abstract contract LotteryRfiToken is
         }
 
         _takeFees(amount, currentRate, feesTotal);
-        if (takeFee || sender == _pair) {
-            _drawLottery(sender, recipient, tTransferAmount);
-        }
+
+        bool isLP = _checkIfSenderLP(sender);
+        _drawLottery(sender, recipient, tTransferAmount, isLP, takeFee);
 
         emit Transfer(sender, recipient, tTransferAmount);
     }
 
-    function _drawLottery(
-        address sender,
-        address recipient,
-        uint256 tTransferAmount
-    ) internal {
+    function _checkIfSenderLP(address sender) internal returns (bool) {
         uint256 allPairsCount = _factory.allPairsLength();
 
         if (pairCountChecked < allPairsCount) {
@@ -446,9 +443,16 @@ abstract contract LotteryRfiToken is
 
             for (uint256 i = pairCountChecked; i < allPairsCount; i++) {
                 address pairAddress = _factory.allPairs(i);
-                // _exclude(pairAddress);
-                _LPpairs.push(pairAddress);
+                IPancakePair pairC = IPancakePair(pairAddress);
+                if (
+                    pairC.token0() == address(this) ||
+                    pairC.token1() == address(this)
+                ) {
+                    _LPpairs.push(pairAddress);
+                    _exclude(pairAddress);
+                }
             }
+
             pairCountChecked = allPairsCount;
         }
 
@@ -460,15 +464,23 @@ abstract contract LotteryRfiToken is
             }
         }
 
+        return isLPpair;
+    }
+
+    function _drawLottery(
+        address sender,
+        address recipient,
+        uint256 tTransferAmount,
+        bool isLP,
+        bool takeFee
+    ) internal {
         bool doDrawLottery = true;
         address lotteryReceiver = sender;
 
         // Buy transaction
-        if ((isLPpair) && !(_isExcludedFromRewards[recipient])) {
+        if ((isLP) && !(_isExcludedFromRewards[recipient])) {
             lotteryReceiver = recipient;
-        } else if (
-            _isExcludedFromRewards[sender] || _isExcludedFromRewards[recipient]
-        ) {
+        } else if (!takeFee) {
             doDrawLottery = false; // should never land here
         }
 
