@@ -16,7 +16,6 @@ abstract contract LotteryRfiToken is
     Tokenomics,
     Liquifier
 {
-    using SafeMath for uint256;
     using Address for address;
 
     mapping(address => uint256) internal _reflectedBalances;
@@ -27,8 +26,6 @@ abstract contract LotteryRfiToken is
     mapping(address => bool) internal _isExcludedFromRewards;
 
     address[] private _excluded;
-    address[] private _LPpairs;
-    uint256 private pairCountChecked = 0;
     uint256 private nonce = 1;
 
     constructor() {
@@ -107,10 +104,7 @@ abstract contract LotteryRfiToken is
         _approve(
             sender,
             _msgSender(),
-            _allowances[sender][_msgSender()].sub(
-                amount,
-                "ERC20: transfer amount exceeds allowance"
-            )
+            _allowances[sender][_msgSender()] - amount
         );
         return true;
     }
@@ -155,14 +149,14 @@ abstract contract LotteryRfiToken is
             "LotteryRfiToken: burn amount exceeds balance"
         );
 
-        uint256 reflectedAmount = amount.mul(_getCurrentRate());
+        uint256 reflectedAmount = amount * _getCurrentRate();
 
         // remove the amount from the sender's balance first
-        _reflectedBalances[sender] = _reflectedBalances[sender].sub(
-            reflectedAmount
-        );
+        _reflectedBalances[sender] =
+            _reflectedBalances[sender] -
+            reflectedAmount;
         if (_isExcludedFromRewards[sender])
-            _balances[sender] = _balances[sender].sub(amount);
+            _balances[sender] = _balances[sender] - amount;
 
         _burnTokens(sender, amount, reflectedAmount);
     }
@@ -181,11 +175,11 @@ abstract contract LotteryRfiToken is
          * tokens to the burn address (which should be excluded from rewards) is sufficient
          * in RFI
          */
-        _reflectedBalances[burnAddress] = _reflectedBalances[burnAddress].add(
-            rBurn
-        );
+        _reflectedBalances[burnAddress] =
+            _reflectedBalances[burnAddress] +
+            rBurn;
         if (_isExcludedFromRewards[burnAddress])
-            _balances[burnAddress] = _balances[burnAddress].add(tBurn);
+            _balances[burnAddress] = _balances[burnAddress] + tBurn;
 
         /**
          * @dev Emit the event so that the burn address balance is updated (on bscscan)
@@ -201,7 +195,7 @@ abstract contract LotteryRfiToken is
         _approve(
             _msgSender(),
             spender,
-            _allowances[_msgSender()][spender].add(addedValue)
+            _allowances[_msgSender()][spender] + addedValue
         );
         return true;
     }
@@ -214,10 +208,7 @@ abstract contract LotteryRfiToken is
         _approve(
             _msgSender(),
             spender,
-            _allowances[_msgSender()][spender].sub(
-                subtractedValue,
-                "ERC20: decreased allowance below zero"
-            )
+            _allowances[_msgSender()][spender] - subtractedValue
         );
         return true;
     }
@@ -262,7 +253,7 @@ abstract contract LotteryRfiToken is
             "Amount must be less than total reflections"
         );
         uint256 currentRate = _getCurrentRate();
-        return rAmount.div(currentRate);
+        return rAmount / currentRate;
     }
 
     function _exclude(address account) internal {
@@ -378,14 +369,15 @@ abstract contract LotteryRfiToken is
         }
 
         _beforeTokenTransfer(sender, recipient, amount, takeFee);
-        _transferTokens(sender, recipient, amount, takeFee);
+        _transferTokens(sender, recipient, amount, takeFee, false);
     }
 
     function _transferTokens(
         address sender,
         address recipient,
         uint256 amount,
-        bool takeFee
+        bool takeFee,
+        bool isLottery
     ) private {
         /**
          * We don't need to know anything about the individual fees here
@@ -412,94 +404,61 @@ abstract contract LotteryRfiToken is
          * Sender's and Recipient's reflected balances must be always updated regardless of
          * whether they are excluded from rewards or not.
          */
-        _reflectedBalances[sender] = _reflectedBalances[sender].sub(rAmount);
-        _reflectedBalances[recipient] = _reflectedBalances[recipient].add(
-            rTransferAmount
-        );
+        _reflectedBalances[sender] = _reflectedBalances[sender] - rAmount;
+        _reflectedBalances[recipient] =
+            _reflectedBalances[recipient] +
+            rTransferAmount;
 
         /**
          * Update the true/nominal balances for excluded accounts
          */
         if (_isExcludedFromRewards[sender]) {
-            _balances[sender] = _balances[sender].sub(tAmount);
+            _balances[sender] = _balances[sender] - tAmount;
         }
         if (_isExcludedFromRewards[recipient]) {
-            _balances[recipient] = _balances[recipient].add(tTransferAmount);
+            _balances[recipient] = _balances[recipient] + tTransferAmount;
         }
 
         _takeFees(amount, currentRate, feesTotal);
 
-        bool isLP = _checkIfSenderLP(sender);
-        _drawLottery(sender, recipient, tTransferAmount, isLP, takeFee);
+        if (!isLottery) {
+            _drawLottery(sender, recipient, tTransferAmount, takeFee);
+        }
 
         emit Transfer(sender, recipient, tTransferAmount);
-    }
-
-    function _checkIfSenderLP(address sender) internal returns (bool) {
-        uint256 allPairsCount = _factory.allPairsLength();
-
-        if (pairCountChecked < allPairsCount) {
-            // new pairs added since last check
-
-            for (uint256 i = pairCountChecked; i < allPairsCount; i++) {
-                address pairAddress = _factory.allPairs(i);
-                IPancakePair pairC = IPancakePair(pairAddress);
-                if (
-                    pairC.token0() == address(this) ||
-                    pairC.token1() == address(this)
-                ) {
-                    _LPpairs.push(pairAddress);
-                    _exclude(pairAddress);
-                }
-            }
-
-            pairCountChecked = allPairsCount;
-        }
-
-        bool isLPpair = false;
-        for (uint256 i = 0; i < _LPpairs.length; i++) {
-            if (_LPpairs[i] == sender) {
-                isLPpair = true;
-                break;
-            }
-        }
-
-        return isLPpair;
     }
 
     function _drawLottery(
         address sender,
         address recipient,
         uint256 tTransferAmount,
-        bool isLP,
         bool takeFee
     ) internal {
         bool doDrawLottery = true;
         address lotteryReceiver = sender;
 
         // Buy transaction
-        if ((isLP) && !(_isExcludedFromRewards[recipient])) {
+        if (_isV2Pair(sender) && !(_isExcludedFromRewards[recipient])) {
             lotteryReceiver = recipient;
         } else if (!takeFee) {
             doDrawLottery = false; // should never land here
         }
 
         if (doDrawLottery) {
-            uint256 lotteryAmount = balanceOf(address(lotteryAddress))
-                .mul(75)
-                .div(100);
+            uint256 lotteryAmount = (balanceOf(address(lotteryAddress)) * 75) /
+                100;
 
             if (lotteryAmount > 0 && random() == 7) {
-                // 7 is a lucky number
-                if (tTransferAmount.mul(10) < lotteryAmount) {
-                    lotteryAmount = tTransferAmount.mul(10);
+                if (tTransferAmount * 10 < lotteryAmount) {
+                    lotteryAmount = tTransferAmount * 10;
                 }
 
                 _transferTokens(
                     lotteryAddress,
                     lotteryReceiver,
                     lotteryAmount,
-                    false
+                    false, // takeFee
+                    true // isLottery
                 );
             }
         }
@@ -536,13 +495,13 @@ abstract contract LotteryRfiToken is
     {
         uint256 tTotalFees = 0;
         if (feesSum > 0) {
-            tTotalFees = tAmount.mul(feesSum).div(FEES_DIVISOR);
+            tTotalFees = (tAmount * feesSum) / FEES_DIVISOR;
         }
-        uint256 tTransferAmount = tAmount.sub(tTotalFees);
+        uint256 tTransferAmount = tAmount - tTotalFees;
         uint256 currentRate = _getCurrentRate();
-        uint256 rAmount = tAmount.mul(currentRate);
-        uint256 rTotalFees = tTotalFees.mul(currentRate);
-        uint256 rTransferAmount = rAmount.sub(rTotalFees);
+        uint256 rAmount = tAmount * currentRate;
+        uint256 rTotalFees = tTotalFees * currentRate;
+        uint256 rTransferAmount = rAmount - rTotalFees;
 
         return (
             rAmount,
@@ -555,7 +514,7 @@ abstract contract LotteryRfiToken is
 
     function _getCurrentRate() internal view returns (uint256) {
         (uint256 rSupply, uint256 tSupply) = _getCurrentSupply();
-        return rSupply.div(tSupply);
+        return rSupply / tSupply;
     }
 
     function _getCurrentSupply() internal view returns (uint256, uint256) {
@@ -572,10 +531,10 @@ abstract contract LotteryRfiToken is
                 _reflectedBalances[_excluded[i]] > rSupply ||
                 _balances[_excluded[i]] > tSupply
             ) return (_reflectedSupply, TOTAL_SUPPLY);
-            rSupply = rSupply.sub(_reflectedBalances[_excluded[i]]);
-            tSupply = tSupply.sub(_balances[_excluded[i]]);
+            rSupply = rSupply - _reflectedBalances[_excluded[i]];
+            tSupply = tSupply - _balances[_excluded[i]];
         }
-        if (tSupply == 0 || rSupply < _reflectedSupply.div(TOTAL_SUPPLY))
+        if (tSupply == 0 || rSupply < _reflectedSupply / TOTAL_SUPPLY)
             return (_reflectedSupply, TOTAL_SUPPLY);
         return (rSupply, tSupply);
     }
@@ -610,10 +569,10 @@ abstract contract LotteryRfiToken is
         uint256 fee,
         uint256 index
     ) internal {
-        uint256 tFee = amount.mul(fee).div(FEES_DIVISOR);
-        uint256 rFee = tFee.mul(currentRate);
+        uint256 tFee = (amount * fee) / FEES_DIVISOR;
+        uint256 rFee = tFee * currentRate;
 
-        _reflectedSupply = _reflectedSupply.sub(rFee);
+        _reflectedSupply = _reflectedSupply - rFee;
         _addFeeCollectedAmount(index, tFee);
     }
 

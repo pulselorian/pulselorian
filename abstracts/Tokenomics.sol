@@ -3,8 +3,6 @@
  */
 pragma solidity ^0.8.9;
 
-import "../libraries/SafeMath.sol";
-
 /**
  *
  * If you wish to disable a particular tax/fee just set it to zero (or comment it out/remove it).
@@ -15,8 +13,6 @@ import "../libraries/SafeMath.sol";
  *
  */
 abstract contract Tokenomics {
-    using SafeMath for uint256;
-
     // --------------------- Token Settings ------------------- //
     string internal constant NAME = "BSKRv7 - pulselorian.com";
     string internal constant SYMBOL = "BSKRv7";
@@ -65,7 +61,7 @@ abstract contract Tokenomics {
      * See: `Liquifier`
      */
     uint256 internal constant numberOfTokensToSwapToLiquidity =
-        TOTAL_SUPPLY / 1000; // 0.1% of the total supply
+        TOTAL_SUPPLY / 10000; // 0.01% of the total supply
 
     // --------------------- Fees Settings ------------------- //
 
@@ -155,7 +151,7 @@ abstract contract Tokenomics {
 
     function _addFeeCollectedAmount(uint256 index, uint256 amount) internal {
         Fee storage fee = _getFeeStruct(index);
-        fee.total = fee.total.add(amount);
+        fee.total = fee.total + amount;
     }
 
     function getCollectedFeeTotal(uint256 index)

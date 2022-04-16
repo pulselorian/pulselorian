@@ -4,13 +4,10 @@
 pragma solidity ^0.8.9;
 
 import "./Manageable.sol";
-import "../libraries/SafeMath.sol";
 import "../interfaces/IPancakeV2Router.sol";
 import "../interfaces/IPancakeV2Factory.sol";
 
 abstract contract Liquifier is Manageable {
-    using SafeMath for uint256;
-
     uint256 private withdrawableBalance;
 
     enum Env {
@@ -131,8 +128,8 @@ abstract contract Liquifier is Manageable {
 
     function _swapAndLiquify(uint256 amount) private lockTheSwap {
         // split the contract balance into halves
-        uint256 half = amount.div(2);
-        uint256 otherHalf = amount.sub(half);
+        uint256 half = amount / 2;
+        uint256 otherHalf = amount - half;
 
         // capture the contract's current native token balance.
         // this is so that we can capture exactly the amount of native tokens that the
@@ -144,7 +141,7 @@ abstract contract Liquifier is Manageable {
         _swapTokensForNativeTokens(half); // <- this breaks the Native token -> HATE swap when swap+liquify is triggered
 
         // how much native token did we just swap into?
-        uint256 newBalance = address(this).balance.sub(initialBalance);
+        uint256 newBalance = address(this).balance - initialBalance;
 
         // add liquidity to uniswap
         _addLiquidity(otherHalf, newBalance);

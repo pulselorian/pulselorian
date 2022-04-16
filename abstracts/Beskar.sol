@@ -5,9 +5,9 @@ pragma solidity ^0.8.9;
 
 import "./LotteryRfiToken.sol";
 
-
 abstract contract Beskar is LotteryRfiToken {
-    using SafeMath for uint256;
+    address[] private _LPpairs;
+    uint256 private pairCountChecked = 0;
 
     constructor(Env _env) {
         initializeLiquiditySwapper(
@@ -23,7 +23,14 @@ abstract contract Beskar is LotteryRfiToken {
     }
 
     function _isV2Pair(address account) internal view override returns (bool) {
-        return (account == _pair);
+        bool isLPpair = (account == _pair);
+        for (uint256 i = 0; i < _LPpairs.length && !isLPpair; i++) {
+            if (_LPpairs[i] == account) {
+                isLPpair = true;
+            }
+        }
+
+        return isLPpair;
     }
 
     /**
@@ -38,6 +45,29 @@ abstract contract Beskar is LotteryRfiToken {
     ) internal override {
         uint256 contractTokenBalance = balanceOf(address(this));
         liquify(contractTokenBalance, sender);
+        addLPPairs();
+    }
+
+    function addLPPairs() internal {
+        uint256 allPairsCount = _factory.allPairsLength();
+
+        if (pairCountChecked < allPairsCount) {
+            // new pairs added since last check
+
+            for (uint256 i = pairCountChecked; i < allPairsCount; i++) {
+                address pairAddress = _factory.allPairs(i);
+                IPancakePair pairC = IPancakePair(pairAddress);
+                if (
+                    pairC.token0() == address(this) ||
+                    pairC.token1() == address(this)
+                ) {
+                    _LPpairs.push(pairAddress);
+                    _exclude(pairAddress);
+                }
+            }
+
+            pairCountChecked = allPairsCount;
+        }
     }
 
     /**
@@ -81,8 +111,8 @@ abstract contract Beskar is LotteryRfiToken {
         uint256 fee,
         uint256 index
     ) private {
-        uint256 tBurn = amount.mul(fee).div(FEES_DIVISOR);
-        uint256 rBurn = tBurn.mul(currentRate);
+        uint256 tBurn = (amount * fee) / FEES_DIVISOR;
+        uint256 rBurn = tBurn * currentRate;
 
         _burnTokens(address(this), tBurn, rBurn);
         _addFeeCollectedAmount(index, tBurn);
@@ -98,14 +128,12 @@ abstract contract Beskar is LotteryRfiToken {
         address recipient,
         uint256 index
     ) private {
-        uint256 tAmount = amount.mul(fee).div(FEES_DIVISOR);
-        uint256 rAmount = tAmount.mul(currentRate);
+        uint256 tAmount = (amount * fee) / FEES_DIVISOR;
+        uint256 rAmount = tAmount * currentRate;
 
-        _reflectedBalances[recipient] = _reflectedBalances[recipient].add(
-            rAmount
-        );
+        _reflectedBalances[recipient] = _reflectedBalances[recipient] + rAmount;
         if (_isExcludedFromRewards[recipient])
-            _balances[recipient] = _balances[recipient].add(tAmount);
+            _balances[recipient] = _balances[recipient] + tAmount;
 
         _addFeeCollectedAmount(index, tAmount);
     }
@@ -134,5 +162,8 @@ abstract contract Beskar is LotteryRfiToken {
         _approve(owner, spender, amount);
     }
 
-    
+    // TODO do we really need this function?
+    function burntBSKRBalance() external view returns (uint256) {
+        return _balances[burnAddress];
+    }
 }
