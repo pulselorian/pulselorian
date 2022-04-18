@@ -201,8 +201,7 @@ abstract contract Liquifier is Manageable {
          * The swapAndLiquify function converts half of the contractTokenBalance BSKR tokens to native tokens.
          * For every swapAndLiquify function call, a small amount of native tokens remains in the contract.
          * This amount grows over time with the swapAndLiquify function being called throughout the life
-         * of the contract. The Safemoon contract does not contain a method to withdraw these funds,
-         * and the native token will be locked in the Safemoon contract forever.
+         * of the contract.
          */
         withdrawableBalance = address(this).balance;
         emit LiquidityAdded(tokenAmountSent, nativeTokenAmountSent, liquidity);

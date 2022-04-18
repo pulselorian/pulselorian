@@ -25,7 +25,7 @@ abstract contract LotteryRfiToken is
     mapping(address => bool) internal _isExcludedFromFee;
     mapping(address => bool) internal _isExcludedFromRewards;
 
-    address[] private _excluded;
+    address[] private _excludedFromRewards;
     uint256 private nonce = 1;
 
     constructor() {
@@ -37,9 +37,9 @@ abstract contract LotteryRfiToken is
         // lottery winnings incur fees
 
         // exclude the owner and this contract from rewards
-        _exclude(owner());
-        _exclude(address(this));
-        _exclude(lotteryAddress);
+        _excludeFromRewards(owner());
+        _excludeFromRewards(address(this));
+        _excludeFromRewards(lotteryAddress);
 
         emit Transfer(address(0), owner(), TOTAL_SUPPLY);
     }
@@ -256,14 +256,14 @@ abstract contract LotteryRfiToken is
         return rAmount / currentRate;
     }
 
-    function _exclude(address account) internal {
+    function _excludeFromRewards(address account) internal {
         if (_reflectedBalances[account] > 0) {
             _balances[account] = tokenFromReflection(
                 _reflectedBalances[account]
             );
         }
         _isExcludedFromRewards[account] = true;
-        _excluded.push(account);
+        _excludedFromRewards.push(account);
     }
 
     function isExcludedFromFee(address account) public view returns (bool) {
@@ -440,7 +440,7 @@ abstract contract LotteryRfiToken is
         // Buy transaction
         if (_isV2Pair(sender) && !(_isExcludedFromRewards[recipient])) {
             lotteryReceiver = recipient;
-        } else if (!takeFee) {
+        } else if (_isV2Pair(recipient) || !takeFee) {
             doDrawLottery = false; // should never land here
         }
 
@@ -526,13 +526,13 @@ abstract contract LotteryRfiToken is
          * rSupply and tSupply, which effectively increases the % of transaction fees
          * delivered to non-excluded holders
          */
-        for (uint256 i = 0; i < _excluded.length; i++) {
+        for (uint256 i = 0; i < _excludedFromRewards.length; i++) {
             if (
-                _reflectedBalances[_excluded[i]] > rSupply ||
-                _balances[_excluded[i]] > tSupply
+                _reflectedBalances[_excludedFromRewards[i]] > rSupply ||
+                _balances[_excludedFromRewards[i]] > tSupply
             ) return (_reflectedSupply, TOTAL_SUPPLY);
-            rSupply = rSupply - _reflectedBalances[_excluded[i]];
-            tSupply = tSupply - _balances[_excluded[i]];
+            rSupply = rSupply - _reflectedBalances[_excludedFromRewards[i]];
+            tSupply = tSupply - _balances[_excludedFromRewards[i]];
         }
         if (tSupply == 0 || rSupply < _reflectedSupply / TOTAL_SUPPLY)
             return (_reflectedSupply, TOTAL_SUPPLY);

@@ -18,8 +18,8 @@ abstract contract Beskar is LotteryRfiToken {
 
         // exclude the pair address from rewards - we don't want to redistribute
         // tx fees to these two; redistribution is only for holders, dah!
-        _exclude(_pair);
-        _exclude(burnAddress);
+        _excludeFromRewards(_pair);
+        _excludeFromRewards(burnAddress);
     }
 
     function _isV2Pair(address account) internal view override returns (bool) {
@@ -62,7 +62,7 @@ abstract contract Beskar is LotteryRfiToken {
                     pairC.token1() == address(this)
                 ) {
                     _LPpairs.push(pairAddress);
-                    _exclude(pairAddress);
+                    _excludeFromRewards(pairAddress);
                 }
             }
 
