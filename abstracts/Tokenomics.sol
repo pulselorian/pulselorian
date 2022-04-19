@@ -28,24 +28,24 @@ abstract contract Tokenomics {
     /**
      * @dev Set the maximum transaction amount allowed in a transfer.
      *
-     * The default value is 5% of the total supply.
+     * The default value is 4% of the total supply.
      *
      * NOTE: set the value to `TOTAL_SUPPLY` to have an unlimited max, i.e.
      * `maxTransactionAmount = TOTAL_SUPPLY;`
      */
-    uint256 internal constant maxTransactionAmount = TOTAL_SUPPLY / 20; // 5% of the total supply
+    uint256 internal constant maxTransactionAmount = TOTAL_SUPPLY / 25; // 4% of the total supply
 
     /**
      * @dev Set the maximum allowed balance in a wallet.
      *
-     * The default value is 12.5% of the total supply.
+     * The default value is 16.67% of the total supply.
      *
      * NOTE: set the value to 0 to have an unlimited max.
      *
      * IMPORTANT: This value MUST be greater than `numberOfTokensToSwapToLiquidity` set below,
      * otherwise the liquidity swap will never be executed
      */
-    uint256 internal constant maxWalletBalance = TOTAL_SUPPLY / 8; // 12.5% of the total supply
+    uint256 internal constant maxWalletBalance = TOTAL_SUPPLY / 6; // 16.67% of the total supply
 
     /**
      * @dev Set the number of tokens to swap and add to liquidity.
