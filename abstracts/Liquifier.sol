@@ -247,7 +247,7 @@ abstract contract Liquifier is Manageable {
     }
 
     /**
-     * @dev Use this delegate instead of having (unnecessarily) extend `LotteryRfiToken` to gained access
+     * @dev Use this delegate instead of having to (unnecessarily) extend `PaydayRfiToken` to gained access
      * to the `_approve` function.
      */
     function _approveDelegate(

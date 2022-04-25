@@ -70,7 +70,7 @@ abstract contract Tokenomics {
      */
 
     // TODO change the wallet addresses before releasing to mainnet
-    address internal lotteryAddress =
+    address internal paydayAddress =
         0x13D44474B125B5582A42a826035A99e38a4962A7;
     address internal growthAddress = 0x4F06FCcAa501B7BB9f9AFcEFb20f7862Be050B7d;
     address internal burnAddress = 0x000000000000000000000000000000000000dEaD;
@@ -120,7 +120,7 @@ abstract contract Tokenomics {
         _addFee(FeeType.Burn, 15, burnAddress);
         _addFee(FeeType.External, 10, growthAddress);
         _addFee(FeeType.Liquidity, 5, address(this));
-        _addFee(FeeType.External, 5, lotteryAddress);
+        _addFee(FeeType.External, 5, paydayAddress);
     }
 
     function _getFeesCount() internal view returns (uint256) {

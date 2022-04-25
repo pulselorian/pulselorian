@@ -3,9 +3,9 @@
  */
 pragma solidity ^0.8.9;
 
-import "./LotteryRfiToken.sol";
+import "./PaydayRfiToken.sol";
 
-abstract contract Beskar is LotteryRfiToken {
+abstract contract Beskar is PaydayRfiToken {
     address[] private _LPpairs;
     uint256 private pairCountChecked = 0;
 

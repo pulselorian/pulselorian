@@ -8,7 +8,7 @@
  * BSKR's source code borrows some features/code from Safemoon.
  * It's has several changes to the tokenomics to make it a better internet currency
  * It's deflationary, has reflection or auto-staking feature, has burn feature,
- * includes automatic lottery and lot more
+ * includes automatic quarterly payday and a lot more
  * Visit https://www.pulselorian.com for more details
  *
  * - BSKR audit
@@ -36,7 +36,7 @@ import "./abstracts/Beskar.sol";
  * Burn             1.5%      27%
  * Growth           1.0%      18%
  * Liquidity        0.5%       9%
- * Lottery          0.5%       9%
+ * Payday           0.5%       9%
  */
 
 contract BSKRv7 is Beskar {

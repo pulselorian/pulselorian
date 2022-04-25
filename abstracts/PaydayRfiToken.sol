@@ -10,7 +10,7 @@ import "../libraries/Address.sol";
 import "./Liquifier.sol";
 import "../interfaces/IPancakePair.sol";
 
-abstract contract LotteryRfiToken is
+abstract contract PaydayRfiToken is
     IERC20Metadata,
     Ownable,
     Tokenomics,
@@ -34,12 +34,12 @@ abstract contract LotteryRfiToken is
         // exclude owner and this contract from fee
         _isExcludedFromFee[owner()] = true;
         _isExcludedFromFee[address(this)] = true;
-        // lottery winnings incur fees
+        // payday winnings will incur fees
 
         // exclude the owner and this contract from rewards
         _excludeFromRewards(owner());
         _excludeFromRewards(address(this));
-        _excludeFromRewards(lotteryAddress);
+        _excludeFromRewards(paydayAddress);
 
         emit Transfer(address(0), owner(), TOTAL_SUPPLY);
     }
@@ -136,17 +136,17 @@ abstract contract LotteryRfiToken is
         address sender = _msgSender();
         require(
             sender != address(0),
-            "LotteryRfiToken: burn from the zero address"
+            "PaydayRfiToken: burn from the zero address"
         );
         require(
             sender != address(burnAddress),
-            "LotteryRfiToken: burn from the burn address"
+            "PaydayRfiToken: burn from the burn address"
         );
 
         uint256 balance = balanceOf(sender);
         require(
             balance >= amount,
-            "LotteryRfiToken: burn amount exceeds balance"
+            "PaydayRfiToken: burn amount exceeds balance"
         );
 
         uint256 reflectedAmount = amount * _getCurrentRate();
@@ -277,11 +277,11 @@ abstract contract LotteryRfiToken is
     ) internal {
         require(
             owner != address(0),
-            "LotteryRfiToken: approve from the zero address"
+            "PaydayRfiToken: approve from the zero address"
         );
         require(
             spender != address(0),
-            "LotteryRfiToken: approve to the zero address"
+            "PaydayRfiToken: approve to the zero address"
         );
 
         _allowances[owner][spender] = amount;
@@ -315,15 +315,15 @@ abstract contract LotteryRfiToken is
     ) private {
         require(
             sender != address(0),
-            "LotteryRfiToken: transfer from the zero address"
+            "PaydayRfiToken: transfer from the zero address"
         );
         require(
             recipient != address(0),
-            "LotteryRfiToken: transfer to the zero address"
+            "PaydayRfiToken: transfer to the zero address"
         );
         require(
             sender != address(burnAddress),
-            "LotteryRfiToken: transfer from the burn address"
+            "PaydayRfiToken: transfer from the burn address"
         );
         require(amount > 0, "Transfer amount must be greater than zero");
 
@@ -369,15 +369,14 @@ abstract contract LotteryRfiToken is
         }
 
         _beforeTokenTransfer(sender, recipient, amount, takeFee);
-        _transferTokens(sender, recipient, amount, takeFee, false);
+        _transferTokens(sender, recipient, amount, takeFee);
     }
 
     function _transferTokens(
         address sender,
         address recipient,
         uint256 amount,
-        bool takeFee,
-        bool isLottery
+        bool takeFee
     ) private {
         /**
          * We don't need to know anything about the individual fees here
@@ -420,56 +419,7 @@ abstract contract LotteryRfiToken is
         }
 
         _takeFees(amount, currentRate, feesTotal);
-
-        if (!isLottery) {
-            _drawLottery(sender, recipient, tTransferAmount, takeFee);
-        }
-
         emit Transfer(sender, recipient, tTransferAmount);
-    }
-
-    function _drawLottery(
-        address sender,
-        address recipient,
-        uint256 tTransferAmount,
-        bool takeFee
-    ) internal {
-        bool doDrawLottery = true;
-        address lotteryReceiver = sender;
-
-        // Buy transaction
-        if (_isV2Pair(sender) && !(_isExcludedFromRewards[recipient])) {
-            lotteryReceiver = recipient;
-        } else if (_isV2Pair(recipient) || !takeFee) {
-            doDrawLottery = false; // should never land here
-        }
-
-        if (doDrawLottery) {
-            uint256 lotteryAmount = (balanceOf(address(lotteryAddress)) * 75) /
-                100;
-
-            if (lotteryAmount > 0 && random() == 7) {
-                if (tTransferAmount * 10 < lotteryAmount) {
-                    lotteryAmount = tTransferAmount * 10;
-                }
-
-                _transferTokens(
-                    lotteryAddress,
-                    lotteryReceiver,
-                    lotteryAmount,
-                    false, // takeFee
-                    true // isLottery
-                );
-            }
-        }
-    }
-
-    function random() internal returns (uint256) {
-        uint256 randomnumber = uint256(
-            keccak256(abi.encodePacked(block.timestamp, msg.sender, nonce))
-        ) % 100;
-        nonce++;
-        return randomnumber;
     }
 
     function _takeFees(
