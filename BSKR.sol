@@ -3,16 +3,16 @@
  * telegram: https://t.me/ThePulselorian
  * twitter: https://twitter.com/ThePulseLorian
  *
- * BSKR (B3SKAR)
+ * BSKR - <TODO full form>
  *
- * BSKR's source code borrows some features/code from Safemoon.
+ * BSKR's source code borrows some features/code from Reflect & Safemoon.
  * It's has several changes to the tokenomics to make it a better internet currency
  * It's deflationary, has reflection or auto-staking feature, has burn feature,
  * includes automatic quarterly payday and a lot more
  * Visit https://www.pulselorian.com for more details
  *
  * - BSKR audit
- *      <Audit report link to be added here>
+ *      <TODO Audit report link to be added here>
  *
  *
  *    (   (  (  (     (   (( (   .  (   (    (( (   ((
@@ -39,7 +39,7 @@ import "./abstracts/Beskar.sol";
  * Payday           0.5%       9%
  */
 
-contract BSKRv7 is Beskar {
+contract BSKRv8 is Beskar {
     constructor() Beskar(Env.PLSTestnetv2b) {
         // pre-approve the initial liquidity supply
         _approve(owner(), address(_router), ~uint256(0));

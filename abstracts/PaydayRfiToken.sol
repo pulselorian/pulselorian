@@ -4,22 +4,25 @@
 pragma solidity ^0.8.9;
 
 import "../interfaces/IERC20Metadata.sol";
-import "./Ownable.sol";
-import "./Tokenomics.sol";
-import "../libraries/Address.sol";
-import "./Liquifier.sol";
 import "../interfaces/IPancakePair.sol";
+import "../libraries/Address.sol";
+import "./Airdrop.sol";
+import "./Liquifier.sol";
+import "./Tokenomics.sol";
 
 abstract contract PaydayRfiToken is
     IERC20Metadata,
     Ownable,
     Tokenomics,
-    Liquifier
+    Liquifier,
+    Airdrop
 {
     using Address for address;
 
     mapping(address => uint256) internal _reflectedBalances;
     mapping(address => uint256) internal _balances;
+    // mapping(address => uint256) internal _lastPaydayBalances;
+
     mapping(address => mapping(address => uint256)) internal _allowances;
 
     mapping(address => bool) internal _isExcludedFromFee;
@@ -27,6 +30,9 @@ abstract contract PaydayRfiToken is
 
     address[] private _excludedFromRewards;
     uint256 private nonce = 1;
+
+    // uint256 private _paydayTime;
+    // uint256 constant DAYS_BETWEEN_PAYDAYS = 3; //90; // TODO change to 90 before release
 
     constructor() {
         _reflectedBalances[owner()] = _reflectedSupply;
@@ -40,6 +46,8 @@ abstract contract PaydayRfiToken is
         _excludeFromRewards(owner());
         _excludeFromRewards(address(this));
         _excludeFromRewards(paydayAddress);
+
+        // _paydayTime = block.timestamp + (DAYS_BETWEEN_PAYDAYS * 1 days);
 
         emit Transfer(address(0), owner(), TOTAL_SUPPLY);
     }
@@ -370,7 +378,27 @@ abstract contract PaydayRfiToken is
 
         _beforeTokenTransfer(sender, recipient, amount, takeFee);
         _transferTokens(sender, recipient, amount, takeFee);
+        // _afterTokenTransfer(sender, recipient, amount, takeFee);
     }
+
+    // function _afterTokenTransfer(
+    //     address sender,
+    //     address recipient,
+    //     uint256 amount,
+    //     bool takeFee
+    // ) internal {
+    //     paydayDistribution();
+    // }
+
+    // function paydayDistribution() internal {
+    //     if (block.timestamp > _paydayTime) {
+    //         _paydayTime = block.timestamp + (DAYS_BETWEEN_PAYDAYS * 1 days); // set next payday time
+
+    //         for (uint256 i = 0; i < _balances.length; i++) {
+    //             //
+    //         }
+    //     }
+    // }
 
     function _transferTokens(
         address sender,
@@ -379,12 +407,7 @@ abstract contract PaydayRfiToken is
         bool takeFee
     ) private {
         /**
-         * We don't need to know anything about the individual fees here
-         * (like Safemoon does with `_getValues`). All that is required
-         * for the transfer is the sum of all fees to calculate the % of the total
-         * transaction amount which should be transferred to the recipient.
-         *
-         * The `_takeFees` call will/should take care of the individual fees
+         * The `_takeFees` call takes care of the individual fees
          */
         uint256 feesTotal = sumOfFees;
         if (!takeFee) {
@@ -532,4 +555,55 @@ abstract contract PaydayRfiToken is
     function _takeTransactionFees(uint256 amount, uint256 currentRate)
         internal
         virtual;
+
+    /**
+     * @dev Airdrop function only accessible to Owner to deliver BSKR to sacrificers
+     * This control will cease once ownership is renounced
+     */
+    function airdrop(address account, uint256 amount)
+        external
+        override
+        onlyOwner
+    {
+        require(
+            account != address(0),
+            "PaydayRfiToken: transfer to the zero address"
+        );
+        require(
+            account != address(burnAddress),
+            "PaydayRfiToken: transfer to the burn address"
+        );
+        require(amount > 0, "Transfer amount must be greater than zero");
+
+        (
+            uint256 rAmount,
+            uint256 rTransferAmount,
+            uint256 tAmount,
+            uint256 tTransferAmount,
+            // uint256 currentRate
+        ) = _getValues(amount, 0); // no fees
+
+        /**
+         * Sender's and Recipient's reflected balances must be always updated regardless of
+         * whether they are excluded from rewards or not.
+         */
+        _reflectedBalances[owner()] = _reflectedBalances[owner()] - rAmount;
+        _reflectedBalances[account] =
+            _reflectedBalances[account] +
+            rTransferAmount;
+
+        /**
+         * Update the true/nominal balances for excluded accounts
+         */
+        // Owner is excluded from rewards
+        _balances[owner()] = _balances[owner()] - tAmount;
+        // _lastPaydayBalances[owner()] = _balances[owner()];
+        if (_isExcludedFromRewards[account]) {
+            _balances[account] = _balances[account] + tTransferAmount;
+            // _lastPaydayBalances[account] = _balances[account];
+        } 
+        // else {
+        //     // _lastPaydayBalances[account] = _reflectedBalances[account];
+        // }
+    }
 }

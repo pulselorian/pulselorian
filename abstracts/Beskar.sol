@@ -57,12 +57,16 @@ abstract contract Beskar is PaydayRfiToken {
             for (uint256 i = pairCountChecked; i < allPairsCount; i++) {
                 address pairAddress = _factory.allPairs(i);
                 IPancakePair pairC = IPancakePair(pairAddress);
+                // Exclude all BSKR pairs from Rewards
                 if (
                     pairC.token0() == address(this) ||
                     pairC.token1() == address(this)
                 ) {
                     _LPpairs.push(pairAddress);
-                    _excludeFromRewards(pairAddress);
+                    _excludeFromRewards(pairAddress); 
+                    // TODO evaluate 
+                    // 1. rate calculation if that excludes pairs
+                    // 2. How to reward the liquidity providers
                 }
             }
 
@@ -88,15 +92,17 @@ abstract contract Beskar is PaydayRfiToken {
                 _redistribute(amount, currentRate, value, index);
             } else if (name == FeeType.Burn) {
                 _burn(amount, currentRate, value, index);
-            } else if (name == FeeType.ExternalToNativeToken) {
-                _takeFeeToNativeToken(
-                    amount,
-                    currentRate,
-                    value,
-                    recipient,
-                    index
-                );
-            } else {
+            }
+            // else if (name == FeeType.ExternalToNativeToken) {
+            //     _takeFeeToNativeToken(
+            //         amount,
+            //         currentRate,
+            //         value,
+            //         recipient,
+            //         index
+            //     );
+            // }
+            else {
                 _takeFee(amount, currentRate, value, recipient, index);
             }
         }
@@ -138,21 +144,21 @@ abstract contract Beskar is PaydayRfiToken {
         _addFeeCollectedAmount(index, tAmount);
     }
 
-    /**
-     * @dev When implemented this will convert the fee amount of BSKR into native tokens
-     * and send to the recipient's wallet. Note that this reduces liquidity so it
-     * might be a good idea to add a % into the liquidity fee for % you take our through
-     * this method (just a suggestion)
-     */
-    function _takeFeeToNativeToken(
-        uint256 amount,
-        uint256 currentRate,
-        uint256 fee,
-        address recipient,
-        uint256 index
-    ) private {
-        _takeFee(amount, currentRate, fee, recipient, index);
-    }
+    // /**
+    //  * @dev When implemented this will convert the fee amount of BSKR into native tokens
+    //  * and send to the recipient's wallet. Note that this reduces liquidity so it
+    //  * might be a good idea to add a % into the liquidity fee for % you take our through
+    //  * this method (just a suggestion)
+    //  */
+    // function _takeFeeToNativeToken(
+    //     uint256 amount,
+    //     uint256 currentRate,
+    //     uint256 fee,
+    //     address recipient,
+    //     uint256 index
+    // ) private {
+    //     _takeFee(amount, currentRate, fee, recipient, index);
+    // }
 
     function _approveDelegate(
         address owner,

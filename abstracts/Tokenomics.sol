@@ -14,9 +14,9 @@ pragma solidity ^0.8.9;
  */
 abstract contract Tokenomics {
     // --------------------- Token Settings ------------------- //
-    string internal constant NAME = "BSKRv7 - pulselorian.com";
-    string internal constant SYMBOL = "BSKRv7";
-
+     string internal constant SYMBOL = "BSKRv8";
+     string internal constant NAME = "BSKRv8 - pulselorian.com";
+   
     uint16 internal constant FEES_DIVISOR = 10**3;
     uint8 internal constant DECIMALS = 18;
     uint256 internal constant ZEROES = 10**DECIMALS; // 18 decimals to be standard
@@ -28,12 +28,12 @@ abstract contract Tokenomics {
     /**
      * @dev Set the maximum transaction amount allowed in a transfer.
      *
-     * The default value is 4% of the total supply.
+     * The default value is 2% of the total supply.
      *
      * NOTE: set the value to `TOTAL_SUPPLY` to have an unlimited max, i.e.
      * `maxTransactionAmount = TOTAL_SUPPLY;`
      */
-    uint256 internal constant maxTransactionAmount = TOTAL_SUPPLY / 25; // 4% of the total supply
+    uint256 internal constant maxTransactionAmount = TOTAL_SUPPLY / 50; // 2% of the total supply
 
     /**
      * @dev Set the maximum allowed balance in a wallet.
@@ -61,7 +61,7 @@ abstract contract Tokenomics {
      * See: `Liquifier`
      */
     uint256 internal constant numberOfTokensToSwapToLiquidity =
-        TOTAL_SUPPLY / 10000; // 0.01% of the total supply
+        TOTAL_SUPPLY / 2000; // 0.05% of the total supply
 
     // --------------------- Fees Settings ------------------- //
 
@@ -82,6 +82,7 @@ abstract contract Tokenomics {
         External,
         ExternalToNativeToken
     }
+    
     struct Fee {
         FeeType name;
         uint256 value;

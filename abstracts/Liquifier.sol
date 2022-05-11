@@ -4,10 +4,11 @@
 pragma solidity ^0.8.9;
 
 import "./Manageable.sol";
+import "./Ownable.sol";
 import "../interfaces/IPancakeV2Router.sol";
 import "../interfaces/IPancakeV2Factory.sol";
 
-abstract contract Liquifier is Manageable {
+abstract contract Liquifier is Manageable, Ownable {
     uint256 private withdrawableBalance;
 
     enum Env {
@@ -104,6 +105,7 @@ abstract contract Liquifier is Manageable {
             isOverRequiredTokenBalance &&
             swapAndLiquifyEnabled &&
             !inSwapAndLiquify &&
+            // _isV2Pair(sender) // TODO
             (sender != _pair)
         ) {
             _swapAndLiquify(contractTokenBalance);
@@ -196,14 +198,14 @@ abstract contract Liquifier is Manageable {
                 block.timestamp
             );
 
-        // fix the forever locked native token as per the Safemoon's certik audit
         /**
          * The swapAndLiquify function converts half of the contractTokenBalance BSKR tokens to native tokens.
-         * For every swapAndLiquify function call, a small amount of native tokens remains in the contract.
-         * This amount grows over time with the swapAndLiquify function being called throughout the life
-         * of the contract.
+         * For every swapAndLiquify function call, a small amount of native tokens may remain in the contract.
+         * This amount could grows over time with the swapAndLiquify function being called throughout the life
+         * of the contract be permanently locked, to avoid that it's transferred to owner account.
          */
-        withdrawableBalance = address(this).balance;
+        payable(owner()).transfer(address(this).balance);
+
         emit LiquidityAdded(tokenAmountSent, nativeTokenAmountSent, liquidity);
     }
 
@@ -215,17 +217,9 @@ abstract contract Liquifier is Manageable {
     }
 
     /**
-     * @dev The owner can withdraw native token collected in the contract from `swapAndLiquify`
-     * or if someone (accidentally) sends native token directly to the contract.
-     *
-     * Note: Fix for Safemoon contract flaw pointed out in the Certik Audit (SSL-03):
-     *
-     * The swapAndLiquify function converts half of the contractTokenBalance BSKR tokens to native token.
-     * For every swapAndLiquify function call, a small amount of native token remains in the contract.
-     * This amount grows over time with the swapAndLiquify function being called
-     * throughout the life of the contract. The BSKR contract does not contain a method
-     * to withdraw these funds, and the native token will be locked in the BSKR contract forever.
-     *
+     * @dev The swapAndLiquify function converts half of the contractTokenBalance BSKR tokens to native token.
+     * For every swapAndLiquify function call, a small amount of native token may remain and could get 
+     * permanently locked in the contract. This function can be used to retrieve these locked tokens. 
      */
     function withdrawLockedNativeTokens(address payable recipient)
         external
