@@ -14,75 +14,50 @@ pragma solidity ^0.8.9;
  */
 abstract contract Tokenomics {
     // --------------------- Token Settings ------------------- //
-     string internal constant SYMBOL = "BSKRv8";
-     string internal constant NAME = "BSKRv8 - pulselorian.com";
-   
-    uint16 internal constant FEES_DIVISOR = 10**3;
+    string internal constant NAME = "BSKR - pulselorian.com"; // ERC20 _name
+    string internal constant SYMBOL = "BSKR"; // ERC20 _symbol
     uint8 internal constant DECIMALS = 18;
+    uint16 internal constant FEES_DIVISOR = 10**3;
     uint256 internal constant ZEROES = 10**DECIMALS; // 18 decimals to be standard
-
     uint256 private constant MAX = ~uint256(0);
     uint256 internal constant TOTAL_SUPPLY = 10**12 * ZEROES; // 1 trillion
     uint256 internal _reflectedSupply = (MAX - (MAX % TOTAL_SUPPLY));
-
-    /**
-     * @dev Set the maximum transaction amount allowed in a transfer.
-     *
-     * The default value is 2% of the total supply.
-     *
-     * NOTE: set the value to `TOTAL_SUPPLY` to have an unlimited max, i.e.
-     * `maxTransactionAmount = TOTAL_SUPPLY;`
-     */
-    uint256 internal constant maxTransactionAmount = TOTAL_SUPPLY / 50; // 2% of the total supply
-
-    /**
-     * @dev Set the maximum allowed balance in a wallet.
-     *
-     * The default value is 16.67% of the total supply.
-     *
-     * NOTE: set the value to 0 to have an unlimited max.
-     *
-     * IMPORTANT: This value MUST be greater than `numberOfTokensToSwapToLiquidity` set below,
-     * otherwise the liquidity swap will never be executed
-     */
-    uint256 internal constant maxWalletBalance = TOTAL_SUPPLY / 6; // 16.67% of the total supply
-
-    /**
-     * @dev Set the number of tokens to swap and add to liquidity.
-     *
-     * Whenever the contract's balance reaches this number of tokens, swap & liquify will be
-     * executed in the very next transfer (via the `_beforeTokenTransfer`)
-     *
-     * If the `FeeType.Liquidity` is enabled in `FeesSettings`, the given % of each transaction will be first
-     * sent to the contract address. Once the contract's balance reaches `numberOfTokensToSwapToLiquidity` the
-     * `swapAndLiquify` of `Liquifier` will be executed. Half of the tokens will be swapped for native tokens
-     * and together with the other half converted into a BSKR-NativeToken LP Token.
-     *
-     * See: `Liquifier`
-     */
+    uint256 internal constant maxTransactionAmount = TOTAL_SUPPLY / 25; // 4% of the total supply
+    uint256 internal constant maxWalletBalance = TOTAL_SUPPLY / 5; // 20% of the total supply
     uint256 internal constant numberOfTokensToSwapToLiquidity =
         TOTAL_SUPPLY / 2000; // 0.05% of the total supply
+    address internal paydayAddress = 0x13D44474B125B5582A42a826035A99e38a4962A7; // TODO change before release
+    address internal growthAddress = 0x4F06FCcAa501B7BB9f9AFcEFb20f7862Be050B7d; // TODO change before release
+    address internal burnAddress = 0x000000000000000000000000000000000000dEaD;
+
+    // to reduce centralized risk
+    // in addition to owner, the BSKR funds can be spread into these wallets
+    address[] internal sisterOAs = [
+        address(0x000000015d3638A850B12D1D3FcF284B5DD529d5),
+        0x00000010A0eD61306747B4CA7A11D42A84855832,
+        0x000000146E609e2eB40346c668a17Fc32AA4Bd7c,
+        0x00000016a0c2035799f0e3f14184C65AcBD71892,
+        0x000000180803CDb49fb17a098338AF68FfB83136
+    ];
+
+    // // to reduce centralized risk
+    // address[5] internal lpOwners = [
+    //     address(0x00000019e5Ba0A187e48B067B2a0899E712343C7),
+    //     0x000000230Dd8231722989D56E6A0270061E83b8f,
+    //     0x00000023b7892d99c3bd7F51465f9514ED9b82f6,
+    //     0x0000004fBdA7D073a89DBd313d5F7b8a3cdF3903,
+    //     0x00000059f72E9b2197912b7aFedf3eB2278A4cDA
+    // ];
 
     // --------------------- Fees Settings ------------------- //
-
-    /**
-     * @dev To add/edit/remove fees scroll down to the `addFees` function below
-     */
-
-    // TODO change the wallet addresses before releasing to mainnet
-    address internal paydayAddress =
-        0x13D44474B125B5582A42a826035A99e38a4962A7;
-    address internal growthAddress = 0x4F06FCcAa501B7BB9f9AFcEFb20f7862Be050B7d;
-    address internal burnAddress = 0x000000000000000000000000000000000000dEaD;
 
     enum FeeType {
         Burn,
         Liquidity,
         Rfi,
-        External,
-        ExternalToNativeToken
+        External
     }
-    
+
     struct Fee {
         FeeType name;
         uint256 value;
@@ -153,14 +128,5 @@ abstract contract Tokenomics {
     function _addFeeCollectedAmount(uint256 index, uint256 amount) internal {
         Fee storage fee = _getFeeStruct(index);
         fee.total = fee.total + amount;
-    }
-
-    function getCollectedFeeTotal(uint256 index)
-        internal
-        view
-        returns (uint256)
-    {
-        Fee memory fee = _getFeeStruct(index);
-        return fee.total;
     }
 }

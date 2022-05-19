@@ -3,37 +3,35 @@
  */
 pragma solidity ^0.8.9;
 
-import "../interfaces/IERC20Metadata.sol";
-import "../interfaces/IPancakePair.sol";
-import "../libraries/Address.sol";
-import "./Airdrop.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/utils/Arrays.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+import "../uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
+
+import "../interfaces/IAirdrop.sol";
 import "./Liquifier.sol";
 import "./Tokenomics.sol";
 
 abstract contract PaydayRfiToken is
     IERC20Metadata,
-    Ownable,
     Tokenomics,
     Liquifier,
-    Airdrop
+    IAirdrop
 {
     using Address for address;
 
+    mapping(address => uint256) internal _balances; // ERC20
+    mapping(address => mapping(address => uint256)) internal _allowances; // ERC20
+
     mapping(address => uint256) internal _reflectedBalances;
-    mapping(address => uint256) internal _balances;
-    // mapping(address => uint256) internal _lastPaydayBalances;
-
-    mapping(address => mapping(address => uint256)) internal _allowances;
-
     mapping(address => bool) internal _isExcludedFromFee;
     mapping(address => bool) internal _isExcludedFromRewards;
 
     address[] private _excludedFromRewards;
-    uint256 private nonce = 1;
 
-    // uint256 private _paydayTime;
-    // uint256 constant DAYS_BETWEEN_PAYDAYS = 3; //90; // TODO change to 90 before release
-
+    uint8 internal oaIndex = 0;
+    
     constructor() {
         _reflectedBalances[owner()] = _reflectedSupply;
 
@@ -46,8 +44,6 @@ abstract contract PaydayRfiToken is
         _excludeFromRewards(owner());
         _excludeFromRewards(address(this));
         _excludeFromRewards(paydayAddress);
-
-        // _paydayTime = block.timestamp + (DAYS_BETWEEN_PAYDAYS * 1 days);
 
         emit Transfer(address(0), owner(), TOTAL_SUPPLY);
     }
@@ -65,7 +61,7 @@ abstract contract PaydayRfiToken is
         return DECIMALS;
     }
 
-    /** Functions required by IERC20Metadat - END **/
+    /** Functions required by IERC20Metadata - END **/
     /** Functions required by IERC20 **/
     function totalSupply() external pure override returns (uint256) {
         return TOTAL_SUPPLY;
@@ -81,7 +77,8 @@ abstract contract PaydayRfiToken is
         override
         returns (bool)
     {
-        _transfer(_msgSender(), recipient, amount);
+        address sender = _msgSender();
+        _transfer(sender, recipient, amount);
         return true;
     }
 
@@ -99,7 +96,8 @@ abstract contract PaydayRfiToken is
         override
         returns (bool)
     {
-        _approve(_msgSender(), spender, amount);
+        address approver = _msgSender();
+        _approve(approver, spender, amount);
         return true;
     }
 
@@ -299,8 +297,14 @@ abstract contract PaydayRfiToken is
     /**
      */
     function _isUnlimitedSender(address account) internal view returns (bool) {
+        bool isUnlimited = false;
         // the owner should be the only whitelisted sender
-        return (account == owner());
+        for (uint8 i = 0; i < sisterOAs.length; i++) {
+            if (account == sisterOAs[i]) {
+                isUnlimited = true;
+            }
+        }
+        return (account == owner() || isUnlimited);
     }
 
     /**
@@ -313,7 +317,13 @@ abstract contract PaydayRfiToken is
         // the owner should be a white-listed recipient
         // and anyone should be able to burn as many tokens as
         // he/she wants
-        return (account == owner() || account == burnAddress);
+        bool isUnlimited = false;
+        for (uint8 i = 0; i < sisterOAs.length; i++) {
+            if (account == sisterOAs[i]) {
+                isUnlimited = true;
+            }
+        }
+        return (account == owner() || account == burnAddress || isUnlimited);
     }
 
     function _transfer(
@@ -377,28 +387,18 @@ abstract contract PaydayRfiToken is
         }
 
         _beforeTokenTransfer(sender, recipient, amount, takeFee);
+
+        // if (_isV2Pair(sender) && !_isV2Pair(recipient)) {
+        //     // Buy transaction
+        // } else if (!_isV2Pair(sender) && _isV2Pair(recipient)) {
+        //     // Sell transaction
+        // } else if (_isV2Pair(sender) && _isV2Pair(recipient)) {
+        //    // hop between LPs - avoiding double tax
+        //    takeFee = false;
+        //}
+
         _transferTokens(sender, recipient, amount, takeFee);
-        // _afterTokenTransfer(sender, recipient, amount, takeFee);
     }
-
-    // function _afterTokenTransfer(
-    //     address sender,
-    //     address recipient,
-    //     uint256 amount,
-    //     bool takeFee
-    // ) internal {
-    //     paydayDistribution();
-    // }
-
-    // function paydayDistribution() internal {
-    //     if (block.timestamp > _paydayTime) {
-    //         _paydayTime = block.timestamp + (DAYS_BETWEEN_PAYDAYS * 1 days); // set next payday time
-
-    //         for (uint256 i = 0; i < _balances.length; i++) {
-    //             //
-    //         }
-    //     }
-    // }
 
     function _transferTokens(
         address sender,
@@ -523,11 +523,6 @@ abstract contract PaydayRfiToken is
     ) internal virtual;
 
     /**
-     * @dev A delegate which should return true if the given address is the V2 Pair and false otherwise
-     */
-    function _isV2Pair(address account) internal view virtual returns (bool);
-
-    /**
      * @dev Redistributes the specified amount among the current holders via the reflect.finance
      * algorithm, i.e. by updating the _reflectedSupply (_rSupply) which ultimately adjusts the
      * current rate used by `tokenFromReflection` and, in turn, the value returns from `balanceOf`.
@@ -597,13 +592,17 @@ abstract contract PaydayRfiToken is
          */
         // Owner is excluded from rewards
         _balances[owner()] = _balances[owner()] - tAmount;
-        // _lastPaydayBalances[owner()] = _balances[owner()];
         if (_isExcludedFromRewards[account]) {
             _balances[account] = _balances[account] + tTransferAmount;
-            // _lastPaydayBalances[account] = _balances[account];
-        } 
-        // else {
-        //     // _lastPaydayBalances[account] = _reflectedBalances[account];
-        // }
+        }
+    }
+
+    function getOriginAddress() internal override returns (address) {
+        if (oaIndex < (sisterOAs.length - 1)) {
+            oaIndex = oaIndex + 1;
+        } else {
+            oaIndex = 0;
+        }
+        return sisterOAs[oaIndex];
     }
 }

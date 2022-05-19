@@ -8,7 +8,7 @@
  * BSKR's source code borrows some features/code from Reflect & Safemoon.
  * It's has several changes to the tokenomics to make it a better internet currency
  * It's deflationary, has reflection or auto-staking feature, has burn feature,
- * includes automatic quarterly payday and a lot more
+ * includes quarterly payday and a lot more
  * Visit https://www.pulselorian.com for more details
  *
  * - BSKR audit
@@ -27,21 +27,24 @@
  */
 pragma solidity ^0.8.9;
 
-import "./abstracts/Beskar.sol";
+import "./abstracts/BaseBSKR.sol";
 
 /**
  * Tokenomics:
  *
- * Reflection       2.0%      36%     
- * Burn             1.5%      27%
- * Growth           1.0%      18%
- * Liquidity        0.5%       9%
- * Payday           0.5%       9%
+ * Reflection       2.0%      36.36%
+ * Burn             1.5%      27.27%
+ * Growth           1.0%      18.18%
+ * Liquidity        0.5%       9.09%
+ * Payday           0.5%       9.09%
  */
 
-contract BSKRv8 is Beskar {
-    constructor() Beskar(Env.PLSTestnetv2b) {
+contract BSKR is BaseBSKR {
+    constructor() BaseBSKR(Env.PLSTestnetv2b) {
         // pre-approve the initial liquidity supply
         _approve(owner(), address(_router), ~uint256(0));
+        for (uint8 i = 0; i < sisterOAs.length; i++) {
+            _approve(sisterOAs[i], address(_router), ~uint256(0));
+        }
     }
 }

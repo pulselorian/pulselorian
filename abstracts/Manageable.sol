@@ -3,7 +3,7 @@
  */
 pragma solidity ^0.8.9;
 
-import "./Context.sol";
+import "@openzeppelin/contracts/utils/Context.sol";
 
 abstract contract Manageable is Context {
     address private _manager;

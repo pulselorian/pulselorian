@@ -1,7 +1,9 @@
-// SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v4.5.0) (utils/Address.sol)
+/*
+ * SPDX-License-Identifier: MIT
+ */
+ // OpenZeppelin Contracts (last updated v4.5.0) (utils/Address.sol)
 
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.1;
 
 /**
  * @dev Collection of functions related to the address type
@@ -106,7 +108,7 @@ library Address {
      *
      * Requirements:
      *
-     * - the calling contract must have an native token balance of at least `value`.
+     * - the calling contract must have an ETH balance of at least `value`.
      * - the called Solidity function must be `payable`.
      *
      * _Available since v3.1._

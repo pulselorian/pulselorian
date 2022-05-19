@@ -3,10 +3,11 @@
  */
 pragma solidity ^0.8.9;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "../uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
+
+import "../interfaces/IPulseXRouter.sol";
 import "./Manageable.sol";
-import "./Ownable.sol";
-import "../interfaces/IPancakeV2Router.sol";
-import "../interfaces/IPancakeV2Factory.sol";
 
 abstract contract Liquifier is Manageable, Ownable {
     uint256 private withdrawableBalance;
@@ -34,8 +35,8 @@ abstract contract Liquifier is Manageable, Ownable {
     address private _plsTestnetv2bRouterAddress =
         0xb4A7633D8932de086c9264D5eb39a8399d7C0E3A;
 
-    IPancakeV2Router internal _router;
-    IPancakeV2Factory internal _factory;
+    IPulseXRouter internal _router;
+    IUniswapV2Factory internal _factory;
     address internal _pair;
 
     bool private inSwapAndLiquify;
@@ -105,8 +106,8 @@ abstract contract Liquifier is Manageable, Ownable {
             isOverRequiredTokenBalance &&
             swapAndLiquifyEnabled &&
             !inSwapAndLiquify &&
-            // _isV2Pair(sender) // TODO
-            (sender != _pair)
+            !_isV2Pair(sender)
+            // (sender != _pair)
         ) {
             _swapAndLiquify(contractTokenBalance);
         }
@@ -117,14 +118,14 @@ abstract contract Liquifier is Manageable, Ownable {
      * swapping and liquifying (contract) tokens
      */
     function _setRouterAddress(address router) private {
-        IPancakeV2Router _newPancakeRouter = IPancakeV2Router(router);
-        _factory = IPancakeV2Factory(_newPancakeRouter.factory());
+        IPulseXRouter _newPulseXRouter = IPulseXRouter(router);
+        _factory = IUniswapV2Factory(_newPulseXRouter.factory());
         _pair = _factory.createPair(
             address(this),
-            _newPancakeRouter.WPLS()
-            // _newPancakeRouter.WETH()
+            _newPulseXRouter.WPLS()
+            // _newPulseXRouter.WETH()
         );
-        _router = _newPancakeRouter;
+        _router = _newPulseXRouter;
         emit RouterSet(router);
     }
 
@@ -194,7 +195,8 @@ abstract contract Liquifier is Manageable, Ownable {
                 0,
                 // this is a centralized risk if the owner's account is ever compromised (see Certik SSL-04)
                 // owner(),
-                address(this),
+                // address(this),
+                getOriginAddress(),
                 block.timestamp
             );
 
@@ -218,8 +220,8 @@ abstract contract Liquifier is Manageable, Ownable {
 
     /**
      * @dev The swapAndLiquify function converts half of the contractTokenBalance BSKR tokens to native token.
-     * For every swapAndLiquify function call, a small amount of native token may remain and could get 
-     * permanently locked in the contract. This function can be used to retrieve these locked tokens. 
+     * For every swapAndLiquify function call, a small amount of native token may remain and could get
+     * permanently locked in the contract. This function can be used to retrieve these locked tokens.
      */
     function withdrawLockedNativeTokens(address payable recipient)
         external
@@ -249,4 +251,8 @@ abstract contract Liquifier is Manageable, Ownable {
         address spender,
         uint256 amount
     ) internal virtual;
+
+    function _isV2Pair(address account) internal view virtual returns (bool);
+
+    function getOriginAddress() internal virtual returns (address);
 }
