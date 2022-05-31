@@ -3,12 +3,12 @@
  * telegram: https://t.me/ThePulselorian
  * twitter: https://twitter.com/ThePulseLorian
  *
- * BSKR - <TODO full form>
+ * BSKR - Bringer of Serenity, Knowledge and Richness
  *
  * BSKR's source code borrows some features/code from Reflect & Safemoon.
  * It's has several changes to the tokenomics to make it a better internet currency
- * It's deflationary, has reflection or auto-staking feature, has burn feature,
- * includes quarterly payday and a lot more
+ * It's deflationary, has reflection or auto-staking feature, has burn feature.
+ * It supports quarterly payday that can be trigger from external code
  * Visit https://www.pulselorian.com for more details
  *
  * - BSKR audit
