@@ -1,11 +1,18 @@
-### Hi there 👋
-
-<!--
-**pulselorian/pulselorian** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+**BSKR** is a ✨ _special_ ✨ token on PulseChain because it has some of the coolest features 
+       - Just by holding BSKR you win and it is bound to go 10000x within 2 year as well
+       - Tokenomics
+           - Reflection or auto-staking -> 36.36% of transaction fees are redistributed to all holders except for OA
+           - Supply keeps reducing and value keeps going up -> 27.27% of transaction fees are burnt
+           - 1% of the transactions goes to the growth fund which will allow Pulselorian to develop more solutions/applications
+           - 9.09% of transaction fees goes to the liquidity pool
+           - 9.09% of transaction fees goes to the payday pool aka net buyers gains
+              total fee is 5.5% of transaction
+              
 
 Here are some ideas to get you started:
 
-- 🔭 I’m currently working on ...
+- 🔭 We are currently working on NFT and LBSKR yield for NFT holders
+<!--
 - 🌱 I’m currently learning ...
 - 👯 I’m looking to collaborate on ...
 - 🤔 I’m looking for help with ...
