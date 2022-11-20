@@ -1,15 +1,12 @@
-**BSKR** is a ✨ _special_ ✨ token on PulseChain because it has some of the coolest features 
-       - Just by holding BSKR you win and it is bound to go 10000x within 2 year as well
-       - Tokenomics
-           - Reflection or auto-staking -> 36.36% of transaction fees are redistributed to all holders except for OA
-           - Supply keeps reducing and value keeps going up -> 27.27% of transaction fees are burnt
-           - 1% of the transactions goes to the growth fund which will allow Pulselorian to develop more solutions/applications
-           - 9.09% of transaction fees goes to the liquidity pool
-           - 9.09% of transaction fees goes to the payday pool aka net buyers gains
-              total fee is 5.5% of transaction
-              
-
-Here are some ideas to get you started:
+# **BSKR** is a ✨ _special_ ✨ token on **Pulsechain network** because it has some of the coolest features and has huge potential - Just holding BSKR alone would help you win. It is bound to rocket upto 10000x within 2 years
+## Tokenomics
+- Reflection or auto-staking -> 36.36% of transaction fees are redistributed to all holders except for OA
+- Supply keeps reducing and value keeps going up -> 27.27% of transaction fees are burnt
+- 1% of the transactions goes to the growth fund which will allow Pulselorian to develop more solutions/applications
+- 9.09% of transaction fees goes to the liquidity pool
+- 9.09% of transaction fees goes to the payday pool aka net buyers gains
+- Total transaction fees are 5.5% of transaction value
+    
 
 - 🔭 We are currently working on NFT and LBSKR yield for NFT holders
 <!--
