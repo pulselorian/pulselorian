@@ -191,6 +191,7 @@ contract NFTStaking is
         for (uint256 j; j < stakesMeta.stakes.length; ++j) {
             uint256 eligibleBasis = 10000 -
                 _penaltyFor(stakesMeta.stakes[j].since, nowTS);
+
             uint256 rwd = (accYieldPerTknWei / _WEI) -
                 stakesMeta.stakes[j].rewards2Exclude -
                 stakesMeta.stakes[j].claimedRewards;
@@ -208,7 +209,7 @@ contract NFTStaking is
             if (grossDueRewards < 100) {
                 grossDueRewards = 100; // to avoid underflow due to rounding errors
             }
-            
+
             stakeMap[_msgSender()].totalClaimedRewards += rewardsPen;
             lbskrToken.transfer(_msgSender(), rewardsPen);
         }
@@ -254,7 +255,7 @@ contract NFTStaking is
 
         uint256 nowTS = block.timestamp;
         stakeMap[_msgSender()].totalRewards2Exclude += ((accYieldPerTknWei *
-            countOfStakes) / _WEI);
+            tokenIds.length) / _WEI);
 
         for (uint256 i; i < tokenIds.length; ++i) {
             require(
@@ -345,7 +346,13 @@ contract NFTStaking is
                         stakesMeta.stakes[j].claimedRewards;
                     rewardsPen += (rwd * eligibleBasis) / 10000;
                     rewards += rwd;
-                    // stakesMeta.stakes[j].claimedRewards += rwd; Not needed as this stake will be removed
+
+                    stakesMeta.totalClaimedRewards -= stakesMeta
+                        .stakes[j]
+                        .claimedRewards;
+                    stakesMeta.totalRewards2Exclude -= stakesMeta
+                        .stakes[j]
+                        .rewards2Exclude;
 
                     stakesMeta.stakes[j] = stakesMeta.stakes[
                         stakesMeta.stakes.length - 1
@@ -365,8 +372,6 @@ contract NFTStaking is
                 if (grossDueRewards < 100) {
                     grossDueRewards = 100;
                 }
-                
-                stakeMap[_msgSender()].totalClaimedRewards += rewardsPen;
                 lbskrToken.transfer(_msgSender(), rewardsPen);
             }
         }
